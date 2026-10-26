@@ -6,6 +6,8 @@ from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
+from ytpd.resolve.deezer_playlist_api_client import DeezerPlaylistApiClient
+from ytpd.resolve.httpx_deezer_http_transport import HttpxDeezerHttpTransport
 from ytpd.resolve.subprocess_ytdlp_flat_playlist_client import (
     SubprocessYtdlpFlatPlaylistClient,
 )
@@ -42,6 +44,7 @@ class ApplicationComposer:
         resolve_stack = JobResolveStack(
             resume_stack.job_store,
             SubprocessYtdlpFlatPlaylistClient(YtdlpFlatPlaylistParser()),
+            DeezerPlaylistApiClient(HttpxDeezerHttpTransport()),
         )
         app = AppFactory(
             TemplateDirectory().resolve(),

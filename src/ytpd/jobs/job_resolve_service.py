@@ -5,8 +5,7 @@ from ytpd.domain.job_status import JobStatus
 from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.jobs.job_store import JobStore
 from ytpd.ports.playlist_resolver import PlaylistResolver
-from ytpd.resolve.unsupported_source_url_error import UnsupportedSourceUrlError
-from ytpd.resolve.ytdlp_probe_error import YtdlpProbeError
+from ytpd.resolve.playlist_resolve_error import PlaylistResolveError
 
 
 class JobResolveService:
@@ -29,9 +28,7 @@ class JobResolveService:
             return job
         try:
             resolved = self._playlist_resolver.resolve(job.source_url)
-        except UnsupportedSourceUrlError as error:
-            raise InvalidJobError(str(error)) from error
-        except YtdlpProbeError as error:
+        except PlaylistResolveError as error:
             raise InvalidJobError(str(error)) from error
         updated = replace(
             job,

@@ -1,0 +1,11 @@
+{
+  "data": [
+    {
+      "id": 101,
+      "title": "Track One",
+      "duration": 200,
+      "artist": {"name": "Deezer Artist"}
+    }
+  ],
+  "next": "https://api.deezer.com/playlist/42/tracks?index=1"
+}
