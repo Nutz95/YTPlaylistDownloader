@@ -21,7 +21,7 @@ class IndexHandler:
                 "page_title": "YTPlaylistDownloader",
                 "bind_host": self._config.host,
                 "bind_port": self._config.port,
-                "work_dir": self._config.work_dir,
-                "dest_dir": self._config.dest_dir,
+                "work_dir": self._config.work_dir.as_posix(),
+                "dest_dir": self._config.dest_dir.as_posix(),
             },
         )

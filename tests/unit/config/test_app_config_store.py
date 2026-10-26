@@ -16,13 +16,13 @@ def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.Monk
         AppConfig(
             host="127.0.0.1",
             port=8765,
-            work_dir="work_data",
-            dest_dir="out_data",
+            work_dir=Path("work_data"),
+            dest_dir=Path("out_data"),
         )
     )
     assert writable.is_file()
-    assert Path(saved.work_dir).is_dir()
-    assert Path(saved.dest_dir).is_dir()
+    assert saved.work_dir.is_dir()
+    assert saved.dest_dir.is_dir()
     reloaded = store.load()
     assert reloaded.host == "127.0.0.1"
     assert reloaded.port == 8765

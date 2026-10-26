@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -7,5 +8,5 @@ class AppConfig:
 
     host: str
     port: int
-    work_dir: str
-    dest_dir: str
+    work_dir: Path
+    dest_dir: Path

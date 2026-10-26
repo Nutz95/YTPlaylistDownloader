@@ -1,0 +1,51 @@
+.field {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.95rem 0;
+}
+
+.field span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--ink);
+  font: inherit;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid rgb(63 185 80 / 35%);
+  border-color: rgb(63 185 80 / 55%);
+}
+
+button {
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent));
+  color: #04140a;
+  font-weight: 650;
+  padding: 0.65rem 1.05rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.05);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.config-form button[type="submit"] {
+  margin-top: 0.35rem;
+}

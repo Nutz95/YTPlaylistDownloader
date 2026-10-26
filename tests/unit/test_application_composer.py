@@ -14,5 +14,5 @@ def test_composer_builds_app_and_settings(
     assert composed.settings.host == "127.0.0.1"
     assert composed.settings.port == 8765
     assert composed.app.title == "YTPlaylistDownloader"
-    assert Path(composed.settings.work_dir).is_dir()
-    assert Path(composed.settings.dest_dir).is_dir()
+    assert composed.settings.work_dir.is_dir()
+    assert composed.settings.dest_dir.is_dir()

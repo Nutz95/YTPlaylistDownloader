@@ -26,20 +26,18 @@ class AppConfigStore:
 
     def save(self, config: AppConfig) -> AppConfig:
         """Validate directories, write YAML atomically, and return the saved config."""
-        work_dir = self._path_validator.ensure_directory(config.work_dir)
-        dest_dir = self._path_validator.ensure_directory(config.dest_dir)
         normalized = AppConfig(
             host=config.host,
             port=config.port,
-            work_dir=str(work_dir),
-            dest_dir=str(dest_dir),
+            work_dir=self._path_validator.ensure_directory(config.work_dir),
+            dest_dir=self._path_validator.ensure_directory(config.dest_dir),
         )
         self._writable_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "bind_host": normalized.host,
             "bind_port": normalized.port,
-            "work_dir": normalized.work_dir,
-            "dest_dir": normalized.dest_dir,
+            "work_dir": normalized.work_dir.as_posix(),
+            "dest_dir": normalized.dest_dir.as_posix(),
         }
         text = yaml.safe_dump(payload, sort_keys=False)
         temporary_path = self._writable_path.with_suffix(".yaml.tmp")
@@ -69,8 +67,8 @@ class AppConfigStore:
         return AppConfig(
             host=raw_host.strip(),
             port=raw_port,
-            work_dir=raw_work.strip(),
-            dest_dir=raw_dest.strip(),
+            work_dir=Path(raw_work.strip()),
+            dest_dir=Path(raw_dest.strip()),
         )
 
     def _read_packaged_default(self) -> str:

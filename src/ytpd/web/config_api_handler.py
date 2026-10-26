@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from pathlib import Path
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -37,8 +38,8 @@ class ConfigApiHandler:
         return {
             "bind_host": config.host,
             "bind_port": config.port,
-            "work_dir": config.work_dir,
-            "dest_dir": config.dest_dir,
+            "work_dir": config.work_dir.as_posix(),
+            "dest_dir": config.dest_dir.as_posix(),
         }
 
     def _parse_body(self, body: Mapping[str, str | int]) -> AppConfig:
@@ -57,6 +58,6 @@ class ConfigApiHandler:
         return AppConfig(
             host=raw_host,
             port=raw_port,
-            work_dir=raw_work,
-            dest_dir=raw_dest,
+            work_dir=Path(raw_work),
+            dest_dir=Path(raw_dest),
         )

@@ -16,8 +16,8 @@ def test_index_contains_all_tabs(tmp_path: Path) -> None:
         AppConfig(
             host="127.0.0.1",
             port=8765,
-            work_dir=str(tmp_path / "work"),
-            dest_dir=str(tmp_path / "out"),
+            work_dir=tmp_path / "work",
+            dest_dir=tmp_path / "out",
         )
     )
     app = AppFactory(
@@ -33,6 +33,7 @@ def test_index_contains_all_tabs(tmp_path: Path) -> None:
     assert 'data-tab="progress"' in response.text
     assert 'data-tab="config"' in response.text
     assert 'data-tab="catalogue"' in response.text
+    assert 'href="/static/css/tokens.css"' in response.text
 
 
 def test_config_api_round_trip(tmp_path: Path) -> None:
@@ -41,8 +42,8 @@ def test_config_api_round_trip(tmp_path: Path) -> None:
         AppConfig(
             host="127.0.0.1",
             port=8765,
-            work_dir=str(tmp_path / "work"),
-            dest_dir=str(tmp_path / "out"),
+            work_dir=tmp_path / "work",
+            dest_dir=tmp_path / "out",
         )
     )
     app = AppFactory(
@@ -55,8 +56,8 @@ def test_config_api_round_trip(tmp_path: Path) -> None:
     get_response = client.get("/api/config")
     assert get_response.status_code == 200
     payload = get_response.json()
-    payload["work_dir"] = str(tmp_path / "work2")
-    payload["dest_dir"] = str(tmp_path / "out2")
+    payload["work_dir"] = (tmp_path / "work2").as_posix()
+    payload["dest_dir"] = (tmp_path / "out2").as_posix()
     put_response = client.put("/api/config", json=payload)
     assert put_response.status_code == 200
     body = put_response.json()

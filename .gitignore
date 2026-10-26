@@ -228,3 +228,6 @@ config/app.yaml
 
 # Deployed Cursor skills are large; rules stay versioned under .cursor/rules
 .cursor/skills/
+
+# Working notes only — not product source
+plan/
