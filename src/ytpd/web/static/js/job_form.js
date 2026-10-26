@@ -1,6 +1,8 @@
 (() => {
   const urlInput = document.getElementById("job-url");
   const createButton = document.getElementById("job-create");
+  const runButton = document.getElementById("job-run");
+  const cancelButton = document.getElementById("job-cancel");
   const resolveButton = document.getElementById("job-resolve");
   const matchButton = document.getElementById("job-match");
   const downloadButton = document.getElementById("job-download");
@@ -14,6 +16,8 @@
   if (
     !urlInput ||
     !createButton ||
+    !runButton ||
+    !cancelButton ||
     !resolveButton ||
     !matchButton ||
     !downloadButton ||
@@ -147,6 +151,44 @@
     }
     selection.setSelectedJobId(body.job_id);
     await refreshJobList(false);
+  });
+
+  runButton.addEventListener("click", async () => {
+    const jobId = selection.getSelectedJobId();
+    if (!jobId) {
+      status.textContent = "Select or create a job first.";
+      return;
+    }
+    statusOverride = "";
+    status.textContent = "Running pipeline…";
+    const response = await fetch(`/api/jobs/${jobId}/run`, { method: "POST" });
+    const body = await response.json();
+    if (!response.ok) {
+      status.textContent = body.error || "Pipeline failed.";
+      return;
+    }
+    statusOverride = body.cancelled
+      ? `Pipeline cancelled — ${selection.shortId(body.job_id)}`
+      : `Pipeline completed — ${selection.shortId(body.job_id)}`;
+    paintSelectedSummary(body);
+    paintTracks(body);
+    await refreshJobList(false);
+  });
+
+  cancelButton.addEventListener("click", async () => {
+    const jobId = selection.getSelectedJobId();
+    if (!jobId) {
+      status.textContent = "Select a job first.";
+      return;
+    }
+    const response = await fetch(`/api/jobs/${jobId}/cancel`, { method: "POST" });
+    const body = await response.json();
+    if (!response.ok) {
+      status.textContent = body.error || "Cancel failed.";
+      return;
+    }
+    statusOverride = "Cancel requested — waiting for the current stage to finish.";
+    status.textContent = statusOverride;
   });
 
   resolveButton.addEventListener("click", async () => {

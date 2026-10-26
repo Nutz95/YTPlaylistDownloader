@@ -1,10 +1,14 @@
 # YTPlaylistDownloader
 
-Local web app bound to `127.0.0.1`. Current UI has modular tabs (Job, Progression, Config, Catalogue). Config paths (`work_dir`, `dest_dir`) and bind settings are editable and persisted to `config/app.yaml`. Playlist resolve / download / MP3 pipeline comes in later work.
+Local web app on `127.0.0.1` that resolves Deezer / YouTube playlists, matches
+tracks to YouTube, downloads media, and transcodes to MP3 (192 kbps).
 
 ## Requirements
 
-- Python **3.14** (free-threaded build preferred when available)
+- Python **3.14** (free-threaded build preferred)
+- `ffmpeg` on `PATH` for transcoding
+- Optional: [LM Studio](https://lmstudio.ai/) on `http://127.0.0.1:1234/v1` for
+  LLM match fallback when static scoring is weak
 
 ## Run
 
@@ -13,6 +17,20 @@ Local web app bound to `127.0.0.1`. Current UI has modular tabs (Job, Progressio
 ```
 
 Open the URL printed in the console (default `http://127.0.0.1:8765`).
+
+## Daily usage
+
+1. **Config** tab — set relative `work_dir` / `dest_dir` (and LM Studio settings).
+2. **Job** tab — paste a Deezer playlist, YouTube playlist, or single video URL.
+3. **Create job**, then either:
+   - **Run pipeline** for resolve → match → download → transcode, or
+   - step with Resolve / Match / Download / Transcode.
+4. After restart, pick a saved job from the list (no need to copy a job id).
+5. **Resume** rebuilds the next actions from checkpoints; **Cancel** stops the
+   active pipeline between stages.
+6. **Catalogue** tab lists finished MP3 paths.
+
+Progress lives under the **Progression** tab (poll-based bars).
 
 ## Tests
 

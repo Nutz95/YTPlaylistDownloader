@@ -13,6 +13,9 @@
       panel.classList.toggle("is-active", selected);
       panel.hidden = !selected;
     });
+    window.dispatchEvent(
+      new CustomEvent("ytpd-tab-changed", { detail: { tab: tabName } })
+    );
   }
 
   buttons.forEach((button) => {
