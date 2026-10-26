@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# App local state
+_work/
+_out/
+*.db
+catalog.db
