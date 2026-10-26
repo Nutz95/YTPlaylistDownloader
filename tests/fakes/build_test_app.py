@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
-from ytpd.jobs.job_store import JobStore
+from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
 from ytpd.web.app_factory import AppFactory
@@ -27,11 +27,17 @@ class BuildTestApp:
                 dest_dir=Path("out"),
             )
         )
+        resume_stack = JobResumeStack(
+            SqliteJobCheckpointStore(tmp_path / "jobs.db"),
+            tmp_path / "work",
+            tmp_path / "out",
+        )
         return AppFactory(
             TemplateDirectory().resolve(),
             StaticDirectory().resolve(),
             config,
             store,
-            JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db")),
+            resume_stack.job_store,
             ProgressCalculator(),
+            resume_stack.resume_service,
         ).build()

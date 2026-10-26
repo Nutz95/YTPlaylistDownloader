@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ytpd.domain.job_status import JobStatus
 from ytpd.domain.source_kind import SourceKind
@@ -18,3 +18,7 @@ class JobSnapshot:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "tracks", list(self.tracks))
+
+    def with_status(self, status: JobStatus) -> "JobSnapshot":
+        """Return a copy of this snapshot with a different lifecycle status."""
+        return replace(self, status=status)

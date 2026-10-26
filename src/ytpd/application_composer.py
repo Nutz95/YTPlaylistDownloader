@@ -2,7 +2,7 @@ from ytpd.composed_application import ComposedApplication
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
 from ytpd.config.writable_config_path import WritableConfigPath
-from ytpd.jobs.job_store import JobStore
+from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
 from ytpd.runtime.python_version_guard import PythonVersionGuard
@@ -27,14 +27,21 @@ class ApplicationComposer:
         )
         config = config_store.load()
         work_dir = path_validator.ensure_directory(config.work_dir)
-        job_store = JobStore(SqliteJobCheckpointStore(work_dir / "jobs.db"))
+        dest_dir = path_validator.ensure_directory(config.dest_dir)
+        resume_stack = JobResumeStack(
+            SqliteJobCheckpointStore(work_dir / "jobs.db"),
+            work_dir,
+            dest_dir,
+        )
+        resume_stack.resume_service.mark_stale_running_interrupted()
         app = AppFactory(
             TemplateDirectory().resolve(),
             StaticDirectory().resolve(),
             config,
             config_store,
-            job_store,
+            resume_stack.job_store,
             ProgressCalculator(),
+            resume_stack.resume_service,
         ).build()
         return ComposedApplication(
             app=app,

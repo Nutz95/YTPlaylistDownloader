@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
+from ytpd.jobs.job_resume_service import JobResumeService
 from ytpd.jobs.job_store import JobStore
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.web.config_api_handler import ConfigApiHandler
@@ -26,6 +27,7 @@ class AppFactory:
         config_store: AppConfigStore,
         job_store: JobStore,
         progress_calculator: ProgressCalculator,
+        resume_service: JobResumeService,
     ) -> None:
         self._templates_dir = templates_dir
         self._static_dir = static_dir
@@ -33,13 +35,14 @@ class AppFactory:
         self._config_store = config_store
         self._job_store = job_store
         self._progress_calculator = progress_calculator
+        self._resume_service = resume_service
 
     def build(self) -> FastAPI:
         """Create the app with templates, static assets, pages, and APIs."""
         templates = Jinja2Templates(directory=str(self._templates_dir))
         index_handler = IndexHandler(templates, self._config)
         config_handler = ConfigApiHandler(self._config_store)
-        jobs_handler = JobsApiHandler(self._job_store)
+        jobs_handler = JobsApiHandler(self._job_store, self._resume_service)
         progress_handler = ProgressApiHandler(
             self._job_store,
             self._progress_calculator,
@@ -53,6 +56,11 @@ class AppFactory:
         app.add_api_route("/api/jobs", jobs_handler.create_job, methods=["POST"])
         app.add_api_route("/api/jobs", jobs_handler.list_jobs, methods=["GET"])
         app.add_api_route("/api/jobs/{job_id}", jobs_handler.get_job, methods=["GET"])
+        app.add_api_route(
+            "/api/jobs/{job_id}/resume",
+            jobs_handler.resume_job,
+            methods=["POST"],
+        )
         app.add_api_route(
             "/api/jobs/{job_id}/progress",
             progress_handler.get_progress,
