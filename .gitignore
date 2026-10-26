@@ -224,3 +224,6 @@ _work/
 _out/
 *.db
 catalog.db
+
+# Deployed Cursor skills are large; rules stay versioned under .cursor/rules
+.cursor/skills/
