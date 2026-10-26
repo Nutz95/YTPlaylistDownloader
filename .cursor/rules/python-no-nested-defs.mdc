@@ -1,0 +1,27 @@
+---
+description: Forbid nested def/async def in production Python
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# No nested function definitions
+
+In production Python modules, do not nest `def` / `async def` inside another function
+(including under `if` / `for` / `with`).
+
+## Prefer
+
+- Private methods on the owning class
+- Module-level helpers in a dedicated file
+- `functools.partial` or a small callable class
+
+## Rare exemption
+
+```python
+# solid-nested-def: <reason>
+```
+
+immediately above the nested definition.
+
+Tiny one-line **lambdas** (sort keys, etc.) are fine; nested **defs** are not.
+See also `no-nested-classes`.

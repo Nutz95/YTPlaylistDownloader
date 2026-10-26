@@ -1,0 +1,29 @@
+---
+description: Ban nested classes and nested function defs; extract to sibling modules
+globs: "**/*.{py,js,cpp,h,hpp,cu,cuh}"
+alwaysApply: true
+---
+
+# No nested classes or nested defs
+
+Do not nest a `class` / type definition inside another class.
+In production Python, do not nest `def` / `async def` inside another function.
+
+## Required
+
+1. Move the inner type to its own file (Python: one type per file; C++: own header/TU)
+2. Prefer composition / a named collaborator over an inner helper type
+3. Prefer a named method, `functools.partial`, or a dedicated callable module over a nested `def`
+4. Tiny nested **lambdas** for a one-line key/callback are acceptable; nested **types** and nested **defs** are not
+
+## Python exemptions (rare)
+
+Document on the line above the nested def:
+
+```python
+# solid-nested-def: <reason>
+```
+
+## Why
+
+Nested types and nested defs hide dependencies, inflate the outer scope, and block clean unit testing and DI.

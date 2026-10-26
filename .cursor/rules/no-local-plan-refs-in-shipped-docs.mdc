@@ -1,0 +1,27 @@
+---
+description: Ban Lot N / local plan file references in shipped code, tests, and user docs
+alwaysApply: true
+---
+
+# No local plan or lot references in shipped text
+
+Local construction plans (`Plans/`, `*_plan.md`, scratch notes) are often **out of git**.
+Referencing them in shipped code, tests, or user-facing docs makes the text useless to
+anyone without those files.
+
+## Forbidden in production code, tests, README, playbooks, and `docs/`
+
+- Mentions of « Lot N », « Lot 2.5 », « follow-up plan », « see the plan … »
+- Paths like `Plans/…`, `Plans/archives/…`, filenames `*_plan.md`
+- Comments / docstrings / test headers that point at a construction plan
+
+## Allowed
+
+- Content **inside** local plan folders only
+- Agent-local notes that remind agents of this rule
+- Describing **behavior** and **commands** without lot numbers
+
+## Examples
+
+- Bad: `// Lot 3 smoke` / `see feature_plan.md`
+- Good: `Operator smoke: open the live tab, then capture` + the runnable command

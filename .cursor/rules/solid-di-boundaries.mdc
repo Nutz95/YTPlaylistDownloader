@@ -1,0 +1,26 @@
+---
+description: Strict DI — depend on interfaces; concretes only at composition roots
+globs: "**/*.{py,js,cpp,h,hpp}"
+alwaysApply: true
+---
+
+# Strict DI boundaries
+
+Keep domain / application code modular and unit-testable via injection.
+
+## Required
+
+1. Depend on **interfaces** (`I*` / `Protocol` / ABC), not concrete hardware or I/O adapters
+2. Construct concrete adapters **only** in a composition root (`main`, `app_factory`, `CompositionRoot*`, CLI entry, `wiring/`)
+3. Unit tests inject fakes under `**/tests/fakes/` — do not fork production logic with test-only env flags or `#ifdef UNIT_TEST` in headers
+4. Do not `monkeypatch.setattr` collaborators to stub I/O — inject a port (see `python-test-fakes`)
+5. If a class is hard to test without stubs inside production, it has too many responsibilities or missing seams — split and inject
+
+## Smell → fix
+
+| Smell | Fix |
+|-------|-----|
+| Service new's HTTP/BLE/filesystem clients | Inject interface; wire in composition root |
+| `#ifndef UNIT_TEST` / `if TESTING` in prod modules | Fake adapter in tests |
+| Concrete adapter header included deep in domain | Move include to composition root |
+| `getattr` / `hasattr` to pick an implementation | Explicit inject or direct call (`python-no-dynamic-access`) |

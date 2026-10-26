@@ -1,0 +1,30 @@
+---
+description: Exactly one Python type per file; ban nested classes and tuple piles
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# One type per file
+
+## Hard rules
+
+1. **One** top-level type definition per `.py` file (`class`, `TypedDict`, `Enum`, `Protocol`, exception)
+2. **No nested classes** - move the inner type to its own module
+3. Collaborator / DTO / enum / result object -> each gets its own file
+4. Homogeneous collections use `list[T]`, never variadic tuples
+5. Heterogeneous multi-value APIs use a dataclass, never `tuple[A, B]`
+
+## Split smells
+
+| Smell | Fix |
+|-------|-----|
+| `AssetManifest` + `ManifestLoader` in one file | `asset_manifest.py` + `manifest_loader.py` |
+| `SizeViolation` + `SourceSizeGuard` in one file | `size_violation.py` + `source_size_guard.py` |
+| `parse() -> tuple[samples, energy]` | `PowerGraphResult` dataclass |
+| `_split_uid() -> tuple[str, ChannelLabel]` | `InverterUidChannel` dataclass |
+
+## Allowed
+
+- Module-level functions next to the single type they serve
+- Constants / private helpers in the same file
+- Flask only: `Response | tuple[Response, int]`

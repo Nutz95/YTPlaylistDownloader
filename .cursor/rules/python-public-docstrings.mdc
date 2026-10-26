@@ -1,0 +1,38 @@
+---
+description: Require docstrings on public Python classes, enums, and callables
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# Public docstrings
+
+Every **public** Python type and callable must have a docstring.
+
+## Required
+
+- Public classes (including `Enum`, `Protocol`, `TypedDict`, exceptions)
+- Public module-level functions (`def` / `async def` not starting with `_`)
+- Public methods (same rule; **dunder** methods like `__init__` are exempt)
+
+Private names (`_foo`) do not need docstrings.
+
+## Prefer
+
+```python
+class BindSettings:
+    """HTTP bind host and port for the local web server."""
+
+    host: str
+    port: int
+
+def load_text(self, text: str) -> BindSettings:
+    """Parse YAML text into validated bind settings."""
+```
+
+## Rare exemption
+
+```python
+# solid-no-docstring: <reason>
+```
+
+immediately above the type or callable.

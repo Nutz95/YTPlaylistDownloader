@@ -1,0 +1,27 @@
+---
+description: Ban UNIT_TEST / test ifdefs in production headers; prefer DI over test instrumentation
+globs: "**/*.{h,hpp,py}"
+alwaysApply: true
+---
+
+# No test instrumentation in production APIs
+
+Production headers and public modules must not be gated on test builds.
+
+## Forbidden in production headers (`.h` / `.hpp`)
+
+- `UNIT_TEST`
+- `#ifdef UNIT_TEST` / `#ifndef UNIT_TEST` / `#if defined(UNIT_TEST)`
+- Equivalent test-only compile or runtime forks that change the public API surface
+
+## Also forbidden in production `.cpp`
+
+Same gates — esp_cpp_guardrails fails hard by default. Prefer DI / fakes, or exclude device TUs from host `build_src_filter`.
+
+## Required instead
+
+1. Keep portable types in headers, or unconditional device includes in device-only TUs
+2. Put host stubs in **test doubles** / fakes injected at the composition root
+3. Never reshape production logic with test build flags
+
+If you need `#ifndef UNIT_TEST` to compile a service on host, extract an interface and inject a fake.

@@ -1,0 +1,39 @@
+---
+description: Forbid Python object/Any typing; require concrete types and one type per file
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# No object / Any typing
+
+Never use `object`, `typing.Any`, bare `dict`, bare `list`, or bare `tuple` as types.
+
+## Required
+
+- Prefer `TypedDict`, `dataclass`, enums, and unions (`str | None`)
+- Annotate every public function parameter and return type
+- Use `dict[str, str]`, `list[Concrete]` (not variadic tuples)
+- Frozen models with `list[T]` must copy lists in `__post_init__`
+- **Exactly one** class / TypedDict / enum / Protocol per file
+- **No nested classes**
+- Multi-field returns -> dedicated dataclass, never stacked tuple returns
+
+## Forbidden examples
+
+```python
+channels: tuple[ChannelReading, ...]
+def parse(...) -> tuple[tuple[PowerSample, ...], float | None]: ...
+def _split_uid(...) -> tuple[str, ChannelLabel]: ...
+```
+
+## Allowed examples
+
+```python
+channels: list[ChannelReading]
+def parse(...) -> PowerGraphResult: ...
+def _split_uid(...) -> InverterUidChannel: ...
+```
+
+## Sole exception
+
+`Response | tuple[Response, int]` for Flask status pairs only.

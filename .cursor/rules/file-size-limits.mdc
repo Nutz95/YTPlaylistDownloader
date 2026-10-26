@@ -1,0 +1,29 @@
+---
+description: Max 400 lines per file, 30 methods per class, 60 lines per function
+globs: "**/*.{py,js,css,html,ps1,cpp,h,hpp,cu,cuh}"
+alwaysApply: true
+---
+
+# File and class size limits
+
+Hard limits:
+
+- **Max 400 lines** per source file (Python/CSS/other; JS dashboard/device UI may use **500** — see `solid-javascript`)
+- **Max 30 methods/functions** per class
+- **Max 60 lines** per function / method body (extract helpers)
+
+## Required behavior
+
+1. Split before exceeding limits (one responsibility / one type per file)
+2. Prefer extracting helpers/views/services over growing a god-class
+3. Generated bundles may exceed limits; do not hand-edit them
+4. Never put a second class/TypedDict/Enum in the same file to “save a split”
+5. No nested classes / nested defs — see `no-nested-classes`
+
+## Python exemption (rare)
+
+```python
+# solid-function-max-lines: <reason>
+```
+
+Place the marker on the line immediately above the `def` (or its decorators).

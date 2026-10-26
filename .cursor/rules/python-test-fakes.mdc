@@ -1,0 +1,22 @@
+---
+description: Fakes under tests/fakes; one class per file; prefer DI over monkeypatch
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# Test fakes and doubles
+
+## Required
+
+1. Put Fake/Dummy doubles under `**/tests/fakes/` (one class per file, no nested classes)
+2. Do not define collaborator Fake classes inside `test_*.py` / `*_test_support.py` (pytest `Test*` classes are fine)
+3. Inject ports / fakes at construction — do **not** `monkeypatch.setattr` a collaborator (`os`, `time`, internal module) to stub I/O
+4. Prefer complete fakes that implement the real Protocol/ABC contract
+
+## Smell → fix
+
+| Smell | Fix |
+|-------|-----|
+| Inline `class FakeX` in a test module | Move to `tests/fakes/fake_x.py` |
+| `monkeypatch.setattr(service, "_client", …)` | Inject `HttpClient` in the constructor |
+| Incomplete fake missing a method used in prod | Expand the fake; do not catch `AttributeError` |

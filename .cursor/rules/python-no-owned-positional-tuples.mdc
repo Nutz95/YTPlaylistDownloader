@@ -1,0 +1,36 @@
+---
+description: Ban owned NamedTuple/namedtuple and positional tuple value objects
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# No owned positional tuple value objects
+
+Do not invent domain shapes as positional tuples, `collections.namedtuple`, or
+`typing.NamedTuple`. Prefer a frozen `@dataclass` (one type per file).
+
+## Forbidden
+
+```python
+Point = namedtuple("Point", ["x", "y"])
+class Rect(NamedTuple):
+    x: int
+    y: int
+    w: int
+    h: int
+def bounds(...) -> tuple[int, int, int, int]: ...
+```
+
+## Allowed
+
+```python
+@dataclass(frozen=True)
+class FrameRect:
+    x: int
+    y: int
+    width: int
+    height: int
+```
+
+Heterogeneous multi-value returns also belong in a dataclass — see `python-no-object-typing`
+and `solid-python` (Flask `Response | tuple[Response, int]` remains the sole status-pair exception).
