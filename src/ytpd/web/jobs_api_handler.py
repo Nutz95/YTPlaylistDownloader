@@ -11,11 +11,12 @@ from ytpd.jobs.job_resume_plan_codec import JobResumePlanCodec
 from ytpd.jobs.job_resume_service import JobResumeService
 from ytpd.jobs.job_snapshot_codec import JobSnapshotCodec
 from ytpd.jobs.job_store import JobStore
+from ytpd.jobs.job_transcode_service import JobTranscodeService
 from ytpd.web.job_list_item_codec import JobListItemCodec
 
 
 class JobsApiHandler:
-    """HTTP handlers for creating, reading, resolving, matching, and resuming jobs."""
+    """HTTP handlers for job create/resolve/match/download/transcode/resume."""
 
     def __init__(
         self,
@@ -24,12 +25,14 @@ class JobsApiHandler:
         resolve_service: JobResolveService,
         match_service: JobMatchService,
         download_service: JobDownloadService,
+        transcode_service: JobTranscodeService,
     ) -> None:
         self._job_store = job_store
         self._resume_service = resume_service
         self._resolve_service = resolve_service
         self._match_service = match_service
         self._download_service = download_service
+        self._transcode_service = transcode_service
         self._codec = JobSnapshotCodec()
         self._list_codec = JobListItemCodec()
         self._resume_codec = JobResumePlanCodec()
@@ -105,6 +108,16 @@ class JobsApiHandler:
         """Download matched tracks for a job and persist download phases."""
         try:
             snapshot = self._download_service.download_job(job_id)
+        except InvalidJobError as error:
+            message = str(error)
+            status_code = 404 if message == "job not found" else 400
+            return JSONResponse(status_code=status_code, content={"error": message})
+        return JSONResponse(content=self._codec.to_payload(snapshot))
+
+    def transcode_job(self, job_id: str) -> JSONResponse:
+        """Transcode downloaded tracks for a job into destination MP3 files."""
+        try:
+            snapshot = self._transcode_service.transcode_job(job_id)
         except InvalidJobError as error:
             message = str(error)
             status_code = 404 if message == "job not found" else 400

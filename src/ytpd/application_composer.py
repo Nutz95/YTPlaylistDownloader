@@ -27,6 +27,7 @@ from ytpd.resolve.ytdlp_flat_playlist_parser import YtdlpFlatPlaylistParser
 from ytpd.runtime.gpu_resource_gate import GpuResourceGate
 from ytpd.runtime.python_version_guard import PythonVersionGuard
 from ytpd.runtime.sys_interpreter_version_provider import SysInterpreterVersionProvider
+from ytpd.transcode.transcode_stack_factory import TranscodeStackFactory
 from ytpd.web.app_factory import AppFactory
 from ytpd.web.static_directory import StaticDirectory
 from ytpd.web.template_directory import TemplateDirectory
@@ -69,6 +70,8 @@ class ApplicationComposer:
             stacks.resolve_service,
             stacks.match_service,
             stacks.download_service,
+            stacks.transcode_service,
+            stacks.catalog,
         ).build()
         return ComposedApplication(
             app=app,
@@ -106,8 +109,13 @@ class ApplicationComposer:
             YtdlpDownloader(paths, DownloadResumePolicy()),
             max_workers=pool_workers,
         )
+        transcode_stack = TranscodeStackFactory().build(
+            job_store, work_dir, dest_dir, resource_gate
+        )
         return ComposedJobStacks(
             resolve_service=resolve_stack.resolve_service,
             match_service=match_stack.match_service,
             download_service=download_stack.download_service,
+            transcode_service=transcode_stack.transcode_service,
+            catalog=transcode_stack.catalog,
         )

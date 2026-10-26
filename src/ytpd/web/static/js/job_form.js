@@ -4,6 +4,7 @@
   const resolveButton = document.getElementById("job-resolve");
   const matchButton = document.getElementById("job-match");
   const downloadButton = document.getElementById("job-download");
+  const transcodeButton = document.getElementById("job-transcode");
   const resumeButton = document.getElementById("job-resume");
   const refreshButton = document.getElementById("job-refresh-list");
   const status = document.getElementById("job-status");
@@ -16,6 +17,7 @@
     !resolveButton ||
     !matchButton ||
     !downloadButton ||
+    !transcodeButton ||
     !resumeButton ||
     !refreshButton ||
     !status ||
@@ -196,6 +198,25 @@
     const body = await response.json();
     if (!response.ok) {
       status.textContent = body.error || "Download failed.";
+      return;
+    }
+    paintSelectedSummary(body);
+    paintTracks(body);
+    await refreshJobList(false);
+  });
+
+  transcodeButton.addEventListener("click", async () => {
+    const jobId = selection.getSelectedJobId();
+    if (!jobId) {
+      status.textContent = "Select a job first.";
+      return;
+    }
+    statusOverride = "";
+    status.textContent = "Transcoding…";
+    const response = await fetch(`/api/jobs/${jobId}/transcode`, { method: "POST" });
+    const body = await response.json();
+    if (!response.ok) {
+      status.textContent = body.error || "Transcode failed.";
       return;
     }
     paintSelectedSummary(body);
