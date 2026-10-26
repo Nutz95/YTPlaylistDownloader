@@ -1,6 +1,6 @@
 # YTPlaylistDownloader
 
-Local web app bound to `127.0.0.1`. Current scaffold serves a minimal home page and loads bind settings from packaged YAML. Playlist resolve / download / MP3 pipeline comes in later work.
+Local web app bound to `127.0.0.1`. Current UI has modular tabs (Job, Progression, Config, Catalogue). Config paths (`work_dir`, `dest_dir`) and bind settings are editable and persisted to `config/app.yaml`. Playlist resolve / download / MP3 pipeline comes in later work.
 
 ## Requirements
 

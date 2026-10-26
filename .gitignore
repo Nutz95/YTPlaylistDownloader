@@ -224,6 +224,7 @@ _work/
 _out/
 *.db
 catalog.db
+config/app.yaml
 
 # Deployed Cursor skills are large; rules stay versioned under .cursor/rules
 .cursor/skills/
