@@ -8,6 +8,7 @@ from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.jobs.job_download_service import JobDownloadService
 from ytpd.jobs.job_match_service import JobMatchService
+from ytpd.jobs.job_orchestrator import JobOrchestrator
 from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_resume_service import JobResumeService
 from ytpd.jobs.job_store import JobStore
@@ -39,6 +40,7 @@ class AppFactory:
         download_service: JobDownloadService,
         transcode_service: JobTranscodeService,
         catalog: OutputCatalog,
+        orchestrator: JobOrchestrator,
     ) -> None:
         self._templates_dir = templates_dir
         self._static_dir = static_dir
@@ -52,6 +54,7 @@ class AppFactory:
         self._download_service = download_service
         self._transcode_service = transcode_service
         self._catalog = catalog
+        self._orchestrator = orchestrator
 
     def build(self) -> FastAPI:
         """Create the app with templates, static assets, pages, and APIs."""
@@ -71,6 +74,7 @@ class AppFactory:
             self._match_service,
             self._download_service,
             self._transcode_service,
+            self._orchestrator,
         )
         progress_handler = ProgressApiHandler(
             self._job_store,
@@ -99,6 +103,16 @@ class AppFactory:
         app.add_api_route(
             "/api/jobs/{job_id}/transcode",
             jobs_handler.transcode_job,
+            methods=["POST"],
+        )
+        app.add_api_route(
+            "/api/jobs/{job_id}/run",
+            jobs_handler.run_job,
+            methods=["POST"],
+        )
+        app.add_api_route(
+            "/api/jobs/{job_id}/cancel",
+            jobs_handler.cancel_job,
             methods=["POST"],
         )
         app.add_api_route(

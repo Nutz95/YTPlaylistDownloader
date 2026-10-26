@@ -10,6 +10,7 @@ from ytpd.config.writable_config_path import WritableConfigPath
 from ytpd.download.download_resume_policy import DownloadResumePolicy
 from ytpd.download.ytdlp_downloader import YtdlpDownloader
 from ytpd.jobs.job_download_stack import JobDownloadStack
+from ytpd.jobs.job_orchestrator_stack import JobOrchestratorStack
 from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.job_store import JobStore
@@ -72,6 +73,7 @@ class ApplicationComposer:
             stacks.download_service,
             stacks.transcode_service,
             stacks.catalog,
+            stacks.orchestrator,
         ).build()
         return ComposedApplication(
             app=app,
@@ -112,10 +114,21 @@ class ApplicationComposer:
         transcode_stack = TranscodeStackFactory().build(
             job_store, work_dir, dest_dir, resource_gate
         )
+        orchestrator_stack = JobOrchestratorStack(
+            job_store,
+            work_dir,
+            dest_dir,
+            resolve_stack.resolve_service,
+            match_stack.match_service,
+            download_stack.download_service,
+            transcode_stack.transcode_service,
+            transcode_stack.catalog,
+        )
         return ComposedJobStacks(
             resolve_service=resolve_stack.resolve_service,
             match_service=match_stack.match_service,
             download_service=download_stack.download_service,
             transcode_service=transcode_stack.transcode_service,
             catalog=transcode_stack.catalog,
+            orchestrator=orchestrator_stack.orchestrator,
         )

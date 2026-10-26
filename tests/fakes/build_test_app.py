@@ -15,6 +15,7 @@ from ytpd.config.path_validator import PathValidator
 from ytpd.domain.transcode_backend_kind import TranscodeBackendKind
 from ytpd.jobs.job_download_stack import JobDownloadStack
 from ytpd.jobs.job_match_stack import JobMatchStack
+from ytpd.jobs.job_orchestrator_stack import JobOrchestratorStack
 from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.job_transcode_stack import JobTranscodeStack
@@ -112,6 +113,16 @@ class BuildTestApp:
             resource_gate,
             catalog=catalog,
         )
+        orchestrator_stack = JobOrchestratorStack(
+            resume_stack.job_store,
+            tmp_path / "work",
+            tmp_path / "out",
+            resolve_stack.resolve_service,
+            match_stack.match_service,
+            download_stack.download_service,
+            transcode_stack.transcode_service,
+            catalog,
+        )
         return AppFactory(
             TemplateDirectory().resolve(),
             StaticDirectory().resolve(),
@@ -125,4 +136,5 @@ class BuildTestApp:
             download_stack.download_service,
             transcode_stack.transcode_service,
             catalog,
+            orchestrator_stack.orchestrator,
         ).build()

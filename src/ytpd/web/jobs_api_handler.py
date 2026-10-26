@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.jobs.job_download_service import JobDownloadService
 from ytpd.jobs.job_match_service import JobMatchService
+from ytpd.jobs.job_orchestrator import JobOrchestrator
 from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_resume_plan_codec import JobResumePlanCodec
 from ytpd.jobs.job_resume_service import JobResumeService
@@ -26,6 +27,7 @@ class JobsApiHandler:
         match_service: JobMatchService,
         download_service: JobDownloadService,
         transcode_service: JobTranscodeService,
+        orchestrator: JobOrchestrator,
     ) -> None:
         self._job_store = job_store
         self._resume_service = resume_service
@@ -33,6 +35,7 @@ class JobsApiHandler:
         self._match_service = match_service
         self._download_service = download_service
         self._transcode_service = transcode_service
+        self._orchestrator = orchestrator
         self._codec = JobSnapshotCodec()
         self._list_codec = JobListItemCodec()
         self._resume_codec = JobResumePlanCodec()
@@ -123,3 +126,23 @@ class JobsApiHandler:
             status_code = 404 if message == "job not found" else 400
             return JSONResponse(status_code=status_code, content={"error": message})
         return JSONResponse(content=self._codec.to_payload(snapshot))
+
+    def run_job(self, job_id: str) -> JSONResponse:
+        """Run the full resolve→match→download→transcode pipeline."""
+        try:
+            result = self._orchestrator.run_job(job_id)
+        except InvalidJobError as error:
+            message = str(error)
+            status_code = 404 if message == "job not found" else 400
+            return JSONResponse(status_code=status_code, content={"error": message})
+        body = dict(self._codec.to_payload(result.snapshot))
+        body["cancelled"] = result.cancelled
+        return JSONResponse(content=body)
+
+    def cancel_job(self, job_id: str) -> JSONResponse:
+        """Request cooperative cancellation of the active orchestrator run."""
+        snapshot = self._job_store.get(job_id)
+        if snapshot is None:
+            return JSONResponse(status_code=404, content={"error": "job not found"})
+        self._orchestrator.cancel()
+        return JSONResponse(content={"ok": True, "job_id": job_id})
