@@ -30,6 +30,9 @@ where = ["src"]
 [tool.setuptools.package-data]
 ytpd = [
     "web/templates/*.html",
+    "web/templates/tabs/*.html",
+    "web/static/css/*.css",
+    "web/static/js/*.js",
     "config/default.yaml",
 ]
 

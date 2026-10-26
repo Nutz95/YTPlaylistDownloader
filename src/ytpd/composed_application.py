@@ -2,13 +2,13 @@ from dataclasses import dataclass
 
 from fastapi import FastAPI
 
-from ytpd.config.bind_settings import BindSettings
+from ytpd.config.app_config import AppConfig
 
 
 @dataclass(frozen=True)
 class ComposedApplication:
-    """Fully wired FastAPI app plus bind settings and optional GIL warning."""
+    """Fully wired FastAPI app plus runtime config and optional GIL warning."""
 
     app: FastAPI
-    settings: BindSettings
+    settings: AppConfig
     gil_warning: str | None
