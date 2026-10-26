@@ -19,6 +19,8 @@ def test_index_contains_all_tabs(
     assert 'data-tab="config"' in response.text
     assert 'data-tab="catalogue"' in response.text
     assert 'href="/static/css/tokens.css"' in response.text
+    assert 'id="job-list"' in response.text
+    assert 'id="progress-job-select"' in response.text
 
 
 def test_config_api_round_trip(

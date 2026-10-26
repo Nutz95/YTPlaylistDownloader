@@ -9,6 +9,7 @@ from ytpd.jobs.job_resume_plan_codec import JobResumePlanCodec
 from ytpd.jobs.job_resume_service import JobResumeService
 from ytpd.jobs.job_snapshot_codec import JobSnapshotCodec
 from ytpd.jobs.job_store import JobStore
+from ytpd.web.job_list_item_codec import JobListItemCodec
 
 
 class JobsApiHandler:
@@ -24,6 +25,7 @@ class JobsApiHandler:
         self._resume_service = resume_service
         self._resolve_service = resolve_service
         self._codec = JobSnapshotCodec()
+        self._list_codec = JobListItemCodec()
         self._resume_codec = JobResumePlanCodec()
 
     async def create_job(self, request: Request) -> JSONResponse:
@@ -50,8 +52,10 @@ class JobsApiHandler:
         )
 
     async def list_jobs(self) -> JSONResponse:
-        """Return all known jobs."""
-        jobs = [self._codec.to_payload(item) for item in self._job_store.list_jobs()]
+        """Return lightweight job summaries (no track bodies)."""
+        jobs = [
+            self._list_codec.to_payload(item) for item in self._job_store.list_jobs()
+        ]
         return JSONResponse(content={"jobs": jobs})
 
     async def get_job(self, job_id: str) -> JSONResponse:

@@ -24,6 +24,12 @@ def test_create_and_get_job(
     fetched = client.get(f"/api/jobs/{body['job_id']}")
     assert fetched.status_code == 200
     assert fetched.json()["source_url"] == "https://youtu.be/abc"
+    listed = client.get("/api/jobs")
+    assert listed.status_code == 200
+    jobs = listed.json()["jobs"]
+    assert len(jobs) == 1
+    assert jobs[0]["track_count"] == 0
+    assert "tracks" not in jobs[0]
 
 
 def test_progress_endpoint_for_empty_job(

@@ -5,12 +5,54 @@
   margin: 0.85rem 0 0.5rem;
 }
 
+.job-list-panel {
+  margin: 1.1rem 0 0.75rem;
+}
+
+.job-list-panel h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.job-list {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.job-list-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  background: var(--bg-input);
+  text-align: left;
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+}
+
+.job-list-item.is-selected {
+  border-color: var(--accent);
+}
+
+.job-list-item .meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
 .job-track-list {
   list-style: none;
   margin: 1rem 0 0;
   padding: 0;
   display: grid;
   gap: 0.45rem;
+  max-height: 22rem;
+  overflow: auto;
 }
 
 .job-track-list li {
