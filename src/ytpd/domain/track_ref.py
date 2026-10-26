@@ -17,3 +17,9 @@ class TrackRef:
     youtube_url: str | None
     deezer_id: str | None
     error_message: str | None
+
+    def needs_youtube_match(self) -> bool:
+        """True when the track still needs a YouTube URL (not terminal)."""
+        if self.phase is TrackPhase.SKIPPED or self.phase is TrackPhase.DONE:
+            return False
+        return self.youtube_url is None or self.youtube_url.strip() == ""

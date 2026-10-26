@@ -2,6 +2,7 @@
   const urlInput = document.getElementById("job-url");
   const createButton = document.getElementById("job-create");
   const resolveButton = document.getElementById("job-resolve");
+  const matchButton = document.getElementById("job-match");
   const resumeButton = document.getElementById("job-resume");
   const refreshButton = document.getElementById("job-refresh-list");
   const status = document.getElementById("job-status");
@@ -12,6 +13,7 @@
     !urlInput ||
     !createButton ||
     !resolveButton ||
+    !matchButton ||
     !resumeButton ||
     !refreshButton ||
     !status ||
@@ -154,6 +156,25 @@
     const body = await response.json();
     if (!response.ok) {
       status.textContent = body.error || "Resolve failed.";
+      return;
+    }
+    paintSelectedSummary(body);
+    paintTracks(body);
+    await refreshJobList(false);
+  });
+
+  matchButton.addEventListener("click", async () => {
+    const jobId = selection.getSelectedJobId();
+    if (!jobId) {
+      status.textContent = "Select a job first.";
+      return;
+    }
+    statusOverride = "";
+    status.textContent = "Matching YouTube…";
+    const response = await fetch(`/api/jobs/${jobId}/match`, { method: "POST" });
+    const body = await response.json();
+    if (!response.ok) {
+      status.textContent = body.error || "Match failed.";
       return;
     }
     paintSelectedSummary(body);

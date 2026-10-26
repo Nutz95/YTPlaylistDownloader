@@ -3,15 +3,18 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from tests.fakes.fake_deezer_api_client import FakeDeezerApiClient
+from tests.fakes.fake_youtube_search_client import FakeYoutubeSearchClient
 from tests.fakes.fake_ytdlp_flat_playlist_client import FakeYtdlpFlatPlaylistClient
 from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
+from ytpd.jobs.job_match_stack import JobMatchStack
 from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
 from ytpd.ports.deezer_api_client import DeezerApiClient
+from ytpd.ports.youtube_search_client import YoutubeSearchClient
 from ytpd.ports.ytdlp_flat_playlist_client import YtdlpFlatPlaylistClient
 from ytpd.web.app_factory import AppFactory
 from ytpd.web.static_directory import StaticDirectory
@@ -26,6 +29,7 @@ class BuildTestApp:
         tmp_path: Path,
         ytdlp_client: YtdlpFlatPlaylistClient | None = None,
         deezer_client: DeezerApiClient | None = None,
+        search_client: YoutubeSearchClient | None = None,
     ) -> FastAPI:
         """Create app + relative config dirs inside ``tmp_path`` (caller chdirs)."""
         store = AppConfigStore(tmp_path / "app.yaml", PathValidator())
@@ -47,6 +51,11 @@ class BuildTestApp:
             ytdlp_client or FakeYtdlpFlatPlaylistClient({}),
             deezer_client or FakeDeezerApiClient({}),
         )
+        match_stack = JobMatchStack(
+            resume_stack.job_store,
+            search_client or FakeYoutubeSearchClient({}),
+            max_workers=2,
+        )
         return AppFactory(
             TemplateDirectory().resolve(),
             StaticDirectory().resolve(),
@@ -56,4 +65,5 @@ class BuildTestApp:
             ProgressCalculator(),
             resume_stack.resume_service,
             resolve_stack.resolve_service,
+            match_stack.match_service,
         ).build()

@@ -14,7 +14,7 @@ class TrackStateMachine:
             return ResumeAction.NONE
         if artifacts.mp3_present:
             return ResumeAction.NONE
-        if track.youtube_url is None or track.youtube_url.strip() == "":
+        if track.needs_youtube_match():
             return ResumeAction.MATCH
         if not artifacts.download_complete:
             return ResumeAction.DOWNLOAD

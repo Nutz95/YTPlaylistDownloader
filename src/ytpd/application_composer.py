@@ -1,13 +1,17 @@
+import os
+
 from ytpd.composed_application import ComposedApplication
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
 from ytpd.config.writable_config_path import WritableConfigPath
+from ytpd.jobs.job_match_stack import JobMatchStack
 from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
 from ytpd.resolve.deezer_playlist_api_client import DeezerPlaylistApiClient
 from ytpd.resolve.httpx_deezer_http_transport import HttpxDeezerHttpTransport
+from ytpd.resolve.subprocess_youtube_search_client import SubprocessYoutubeSearchClient
 from ytpd.resolve.subprocess_ytdlp_flat_playlist_client import (
     SubprocessYtdlpFlatPlaylistClient,
 )
@@ -41,10 +45,17 @@ class ApplicationComposer:
             dest_dir,
         )
         resume_stack.resume_service.mark_stale_running_interrupted()
+        parser = YtdlpFlatPlaylistParser()
         resolve_stack = JobResolveStack(
             resume_stack.job_store,
-            SubprocessYtdlpFlatPlaylistClient(YtdlpFlatPlaylistParser()),
+            SubprocessYtdlpFlatPlaylistClient(parser),
             DeezerPlaylistApiClient(HttpxDeezerHttpTransport()),
+        )
+        match_workers = min(8, os.cpu_count() or 4)
+        match_stack = JobMatchStack(
+            resume_stack.job_store,
+            SubprocessYoutubeSearchClient(parser),
+            max_workers=match_workers,
         )
         app = AppFactory(
             TemplateDirectory().resolve(),
@@ -55,6 +66,7 @@ class ApplicationComposer:
             ProgressCalculator(),
             resume_stack.resume_service,
             resolve_stack.resolve_service,
+            match_stack.match_service,
         ).build()
         return ComposedApplication(
             app=app,
