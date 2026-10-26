@@ -3,6 +3,7 @@
   const createButton = document.getElementById("job-create");
   const resolveButton = document.getElementById("job-resolve");
   const matchButton = document.getElementById("job-match");
+  const downloadButton = document.getElementById("job-download");
   const resumeButton = document.getElementById("job-resume");
   const refreshButton = document.getElementById("job-refresh-list");
   const status = document.getElementById("job-status");
@@ -14,6 +15,7 @@
     !createButton ||
     !resolveButton ||
     !matchButton ||
+    !downloadButton ||
     !resumeButton ||
     !refreshButton ||
     !status ||
@@ -175,6 +177,25 @@
     const body = await response.json();
     if (!response.ok) {
       status.textContent = body.error || "Match failed.";
+      return;
+    }
+    paintSelectedSummary(body);
+    paintTracks(body);
+    await refreshJobList(false);
+  });
+
+  downloadButton.addEventListener("click", async () => {
+    const jobId = selection.getSelectedJobId();
+    if (!jobId) {
+      status.textContent = "Select a job first.";
+      return;
+    }
+    statusOverride = "";
+    status.textContent = "Downloading…";
+    const response = await fetch(`/api/jobs/${jobId}/download`, { method: "POST" });
+    const body = await response.json();
+    if (!response.ok) {
+      status.textContent = body.error || "Download failed.";
       return;
     }
     paintSelectedSummary(body);

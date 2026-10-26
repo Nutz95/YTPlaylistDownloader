@@ -4,16 +4,19 @@ from fastapi import FastAPI
 
 from tests.fakes.fake_deezer_api_client import FakeDeezerApiClient
 from tests.fakes.fake_lm_studio_http_transport import FakeLmStudioHttpTransport
+from tests.fakes.fake_media_downloader import FakeMediaDownloader
 from tests.fakes.fake_youtube_search_client import FakeYoutubeSearchClient
 from tests.fakes.fake_ytdlp_flat_playlist_client import FakeYtdlpFlatPlaylistClient
 from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
+from ytpd.jobs.job_download_stack import JobDownloadStack
 from ytpd.jobs.job_match_stack import JobMatchStack
 from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_resume_stack import JobResumeStack
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
+from ytpd.jobs.track_artifact_paths import TrackArtifactPaths
 from ytpd.lmstudio.http_lm_studio_client import HttpLmStudioClient
 from ytpd.lmstudio.lm_studio_settings import LmStudioSettings
 from ytpd.match.cascading_youtube_matcher import CascadingYoutubeMatcher
@@ -84,6 +87,14 @@ class BuildTestApp:
             matcher,
             max_workers=2,
         )
+        paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
+        download_stack = JobDownloadStack(
+            resume_stack.job_store,
+            tmp_path / "work",
+            tmp_path / "out",
+            FakeMediaDownloader(paths, set()),
+            max_workers=2,
+        )
         return AppFactory(
             TemplateDirectory().resolve(),
             StaticDirectory().resolve(),
@@ -94,4 +105,5 @@ class BuildTestApp:
             resume_stack.resume_service,
             resolve_stack.resolve_service,
             match_stack.match_service,
+            download_stack.download_service,
         ).build()

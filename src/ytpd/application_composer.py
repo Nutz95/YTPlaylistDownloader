@@ -1,21 +1,22 @@
 import os
+from pathlib import Path
 
 from ytpd.composed_application import ComposedApplication
+from ytpd.composed_job_stacks import ComposedJobStacks
+from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
 from ytpd.config.writable_config_path import WritableConfigPath
-from ytpd.jobs.job_match_stack import JobMatchStack
+from ytpd.download.download_resume_policy import DownloadResumePolicy
+from ytpd.download.ytdlp_downloader import YtdlpDownloader
+from ytpd.jobs.job_download_stack import JobDownloadStack
 from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_resume_stack import JobResumeStack
+from ytpd.jobs.job_store import JobStore
 from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
-from ytpd.lmstudio.http_lm_studio_client import HttpLmStudioClient
-from ytpd.lmstudio.httpx_lm_studio_http_transport import HttpxLmStudioHttpTransport
-from ytpd.lmstudio.lm_studio_settings import LmStudioSettings
-from ytpd.match.cascading_youtube_matcher import CascadingYoutubeMatcher
-from ytpd.match.static_match_decider import StaticMatchDecider
-from ytpd.match.static_match_scorer import StaticMatchScorer
-from ytpd.match.youtube_candidate_fetcher import YoutubeCandidateFetcher
+from ytpd.jobs.track_artifact_paths import TrackArtifactPaths
+from ytpd.match.match_stack_factory import MatchStackFactory
 from ytpd.resolve.deezer_playlist_api_client import DeezerPlaylistApiClient
 from ytpd.resolve.httpx_deezer_http_transport import HttpxDeezerHttpTransport
 from ytpd.resolve.subprocess_youtube_search_client import SubprocessYoutubeSearchClient
@@ -53,30 +54,9 @@ class ApplicationComposer:
             dest_dir,
         )
         resume_stack.resume_service.mark_stale_running_interrupted()
-        parser = YtdlpFlatPlaylistParser()
-        resolve_stack = JobResolveStack(
-            resume_stack.job_store,
-            SubprocessYtdlpFlatPlaylistClient(parser),
-            DeezerPlaylistApiClient(HttpxDeezerHttpTransport()),
-        )
-        lm_settings = LmStudioSettings(
-            base_url=config.lm_base_url,
-            model=config.lm_model,
-            timeout_sec=config.lm_timeout_sec,
-        )
-        search_client = SubprocessYoutubeSearchClient(parser)
-        scorer = StaticMatchScorer()
-        fetcher = YoutubeCandidateFetcher(search_client, scorer)
-        matcher = CascadingYoutubeMatcher(
-            fetcher,
-            StaticMatchDecider(),
-            HttpLmStudioClient(HttpxLmStudioHttpTransport(lm_settings), lm_settings),
-            GpuResourceGate(),
-        )
-        match_stack = JobMatchStack(
-            resume_stack.job_store,
-            matcher,
-            max_workers=min(8, os.cpu_count() or 4),
+        resource_gate = GpuResourceGate()
+        stacks = self._build_job_stacks(
+            resume_stack.job_store, config, work_dir, dest_dir, resource_gate
         )
         app = AppFactory(
             TemplateDirectory().resolve(),
@@ -86,11 +66,48 @@ class ApplicationComposer:
             resume_stack.job_store,
             ProgressCalculator(),
             resume_stack.resume_service,
-            resolve_stack.resolve_service,
-            match_stack.match_service,
+            stacks.resolve_service,
+            stacks.match_service,
+            stacks.download_service,
         ).build()
         return ComposedApplication(
             app=app,
             settings=config,
             gil_warning=gil_warning,
+        )
+
+    def _build_job_stacks(
+        self,
+        job_store: JobStore,
+        config: AppConfig,
+        work_dir: Path,
+        dest_dir: Path,
+        resource_gate: GpuResourceGate,
+    ) -> ComposedJobStacks:
+        parser = YtdlpFlatPlaylistParser()
+        resolve_stack = JobResolveStack(
+            job_store,
+            SubprocessYtdlpFlatPlaylistClient(parser),
+            DeezerPlaylistApiClient(HttpxDeezerHttpTransport()),
+        )
+        pool_workers = min(8, os.cpu_count() or 4)
+        match_stack = MatchStackFactory().build(
+            job_store,
+            config,
+            SubprocessYoutubeSearchClient(parser),
+            pool_workers,
+            resource_gate,
+        )
+        paths = TrackArtifactPaths(work_dir, dest_dir)
+        download_stack = JobDownloadStack(
+            job_store,
+            work_dir,
+            dest_dir,
+            YtdlpDownloader(paths, DownloadResumePolicy()),
+            max_workers=pool_workers,
+        )
+        return ComposedJobStacks(
+            resolve_service=resolve_stack.resolve_service,
+            match_service=match_stack.match_service,
+            download_service=download_stack.download_service,
         )

@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
+from ytpd.jobs.job_download_service import JobDownloadService
 from ytpd.jobs.job_match_service import JobMatchService
 from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_resume_service import JobResumeService
@@ -32,6 +33,7 @@ class AppFactory:
         resume_service: JobResumeService,
         resolve_service: JobResolveService,
         match_service: JobMatchService,
+        download_service: JobDownloadService,
     ) -> None:
         self._templates_dir = templates_dir
         self._static_dir = static_dir
@@ -42,6 +44,7 @@ class AppFactory:
         self._resume_service = resume_service
         self._resolve_service = resolve_service
         self._match_service = match_service
+        self._download_service = download_service
 
     def build(self) -> FastAPI:
         """Create the app with templates, static assets, pages, and APIs."""
@@ -53,6 +56,7 @@ class AppFactory:
             self._resume_service,
             self._resolve_service,
             self._match_service,
+            self._download_service,
         )
         progress_handler = ProgressApiHandler(
             self._job_store,
@@ -80,6 +84,11 @@ class AppFactory:
         app.add_api_route(
             "/api/jobs/{job_id}/match",
             jobs_handler.match_job,
+            methods=["POST"],
+        )
+        app.add_api_route(
+            "/api/jobs/{job_id}/download",
+            jobs_handler.download_job,
             methods=["POST"],
         )
         app.add_api_route(

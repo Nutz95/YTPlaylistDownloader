@@ -11,9 +11,21 @@ class TrackArtifactPaths:
         self._work_dir = work_dir
         self._dest_dir = dest_dir
 
+    def job_work_dir(self, job: JobSnapshot) -> Path:
+        """Work directory dedicated to ``job`` artefacts."""
+        return self._work_dir / job.job_id
+
+    def download_media_file(self, job: JobSnapshot, track: TrackRef) -> Path:
+        """Path of the downloaded media file for ``track``."""
+        return self.job_work_dir(job) / f"{track.track_id}.media"
+
+    def download_partial_file(self, job: JobSnapshot, track: TrackRef) -> Path:
+        """Path of the yt-dlp partial download for ``track``."""
+        return self.job_work_dir(job) / f"{track.track_id}.media.part"
+
     def download_complete_marker(self, job: JobSnapshot, track: TrackRef) -> Path:
         """Path of the sidecar that marks a finished download for ``track``."""
-        return self._work_dir / job.job_id / f"{track.track_id}.download"
+        return self.job_work_dir(job) / f"{track.track_id}.download"
 
     def destination_mp3(self, track: TrackRef) -> Path:
         """Path of the destination MP3 for ``track``."""
