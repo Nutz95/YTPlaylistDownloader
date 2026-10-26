@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+  <nav class="tab-nav" role="tablist" aria-label="Main">
+    <button type="button" class="tab-button is-active" role="tab" aria-selected="true" data-tab="job">Job</button>
+    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="progress">Progression</button>
+    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="config">Config</button>
+    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="catalogue">Catalogue</button>
+  </nav>
+  <section id="tab-job" class="tab-panel is-active" role="tabpanel">
+    {% include "tabs/tab_job.html" %}
+  </section>
+  <section id="tab-progress" class="tab-panel" role="tabpanel" hidden>
+    {% include "tabs/tab_progress.html" %}
+  </section>
+  <section id="tab-config" class="tab-panel" role="tabpanel" hidden>
+    {% include "tabs/tab_config.html" %}
+  </section>
+  <section id="tab-catalogue" class="tab-panel" role="tabpanel" hidden>
+    {% include "tabs/tab_catalogue.html" %}
+  </section>
+{% endblock %}
+{% block scripts %}
+  <script src="/static/js/tabs.js" defer></script>
+  <script src="/static/js/config_form.js" defer></script>
+{% endblock %}

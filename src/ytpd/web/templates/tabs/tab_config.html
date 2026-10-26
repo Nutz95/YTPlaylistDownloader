@@ -1,0 +1,21 @@
+<h2>Config</h2>
+<form id="config-form" class="config-form">
+  <label class="field">
+    <span>Bind host</span>
+    <input id="bind_host" name="bind_host" type="text" value="{{ bind_host }}" required>
+  </label>
+  <label class="field">
+    <span>Bind port</span>
+    <input id="bind_port" name="bind_port" type="number" min="1" max="65535" value="{{ bind_port }}" required>
+  </label>
+  <label class="field">
+    <span>Work directory</span>
+    <input id="work_dir" name="work_dir" type="text" value="{{ work_dir }}" required>
+  </label>
+  <label class="field">
+    <span>Destination directory</span>
+    <input id="dest_dir" name="dest_dir" type="text" value="{{ dest_dir }}" required>
+  </label>
+  <button type="submit">Save</button>
+  <p id="config-status" class="hint" aria-live="polite"></p>
+</form>
