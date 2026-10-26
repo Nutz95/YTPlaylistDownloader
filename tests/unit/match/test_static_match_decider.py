@@ -1,14 +1,20 @@
+import pytest
+
+from ytpd.domain.match_candidate import MatchCandidate
+from ytpd.domain.match_score import MatchScore
 from ytpd.domain.source_kind import SourceKind
 from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
 from ytpd.domain.ytdlp_flat_entry import YtdlpFlatEntry
+from ytpd.match.static_match_decider import StaticMatchDecider
 from ytpd.match.static_match_scorer import StaticMatchScorer
-from ytpd.match.static_youtube_matcher import StaticYoutubeMatcher
+from ytpd.match.youtube_candidate_fetcher import YoutubeCandidateFetcher
+from ytpd.resolve.ytdlp_probe_error import YtdlpProbeError
 from tests.fakes.fake_youtube_search_client import FakeYoutubeSearchClient
 from tests.fakes.raising_youtube_search_client import RaisingYoutubeSearchClient
 
 
-def test_static_matcher_picks_best_scored_hit() -> None:
+def test_fetcher_and_decider_pick_best_scored_hit() -> None:
     track = TrackRef(
         track_id="t1",
         title="Stupid Girl",
@@ -40,13 +46,14 @@ def test_static_matcher_picks_best_scored_hit() -> None:
             ]
         }
     )
-    result = StaticYoutubeMatcher(client, StaticMatchScorer()).match(track)
+    candidates = YoutubeCandidateFetcher(client, StaticMatchScorer()).fetch(track)
+    result = StaticMatchDecider().decide(track.track_id, candidates)
     assert result.matched is True
     assert result.candidate is not None
     assert result.candidate.youtube_url == "https://youtu.be/good"
 
 
-def test_static_matcher_isolates_search_probe_errors() -> None:
+def test_fetcher_propagates_probe_errors() -> None:
     track = TrackRef(
         track_id="t2",
         title="Song",
@@ -59,6 +66,23 @@ def test_static_matcher_isolates_search_probe_errors() -> None:
         error_message=None,
     )
     client = RaisingYoutubeSearchClient({}, {"Artist Song"})
-    result = StaticYoutubeMatcher(client, StaticMatchScorer()).match(track)
+    with pytest.raises(YtdlpProbeError):
+        YoutubeCandidateFetcher(client, StaticMatchScorer()).fetch(track)
+
+
+def test_decider_rejects_below_floor() -> None:
+    result = StaticMatchDecider().decide(
+        "t3",
+        [
+            MatchCandidate(
+                youtube_url="https://youtu.be/x",
+                title="Nope",
+                channel="Z",
+                duration_sec=1,
+                score=MatchScore(10.0),
+            )
+        ],
+    )
     assert result.matched is False
-    assert result.error_message == "simulated search failure"
+    assert result.candidate is not None
+    assert result.error_message == "best candidate below score floor"

@@ -8,6 +8,10 @@ from ytpd.config.app_config import AppConfig
 from ytpd.config.invalid_app_config_error import InvalidAppConfigError
 from ytpd.config.path_validator import PathValidator
 
+_DEFAULT_LM_BASE_URL = "http://127.0.0.1:1234/v1"
+_DEFAULT_LM_MODEL = "qwen3.8-27b-gsq-rco"
+_DEFAULT_LM_TIMEOUT_SEC = 60.0
+
 
 class AppConfigStore:
     """Load and atomically persist application config YAML."""
@@ -33,6 +37,9 @@ class AppConfigStore:
             port=config.port,
             work_dir=self._path_validator.to_storage_path(work_absolute),
             dest_dir=self._path_validator.to_storage_path(dest_absolute),
+            lm_base_url=config.lm_base_url,
+            lm_model=config.lm_model,
+            lm_timeout_sec=config.lm_timeout_sec,
         )
         self._writable_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
@@ -40,6 +47,9 @@ class AppConfigStore:
             "bind_port": normalized.port,
             "work_dir": normalized.work_dir.as_posix(),
             "dest_dir": normalized.dest_dir.as_posix(),
+            "lm_base_url": normalized.lm_base_url,
+            "lm_model": normalized.lm_model,
+            "lm_timeout_sec": normalized.lm_timeout_sec,
         }
         text = yaml.safe_dump(payload, sort_keys=False)
         temporary_path = self._writable_path.with_suffix(".yaml.tmp")
@@ -71,7 +81,39 @@ class AppConfigStore:
             port=raw_port,
             work_dir=Path(raw_work.strip()),
             dest_dir=Path(raw_dest.strip()),
+            lm_base_url=self._optional_str(
+                loaded, "lm_base_url", _DEFAULT_LM_BASE_URL
+            ),
+            lm_model=self._optional_str(loaded, "lm_model", _DEFAULT_LM_MODEL),
+            lm_timeout_sec=self._optional_float(
+                loaded, "lm_timeout_sec", _DEFAULT_LM_TIMEOUT_SEC
+            ),
         )
+
+    def _optional_str(
+        self,
+        loaded: Mapping[str, str | int | float],
+        key: str,
+        default: str,
+    ) -> str:
+        raw = loaded.get(key, default)
+        if not isinstance(raw, str) or raw.strip() == "":
+            raise InvalidAppConfigError(f"{key} must be a non-empty string")
+        return raw.strip()
+
+    def _optional_float(
+        self,
+        loaded: Mapping[str, str | int | float],
+        key: str,
+        default: float,
+    ) -> float:
+        raw = loaded.get(key, default)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            raise InvalidAppConfigError(f"{key} must be a number")
+        value = float(raw)
+        if value <= 0:
+            raise InvalidAppConfigError(f"{key} must be positive")
+        return value
 
     def _read_packaged_default(self) -> str:
         config_root = resources.files("ytpd.config")

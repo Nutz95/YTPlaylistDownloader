@@ -18,6 +18,9 @@ def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.Monk
             port=8765,
             work_dir=Path("work_data"),
             dest_dir=Path("out_data"),
+            lm_base_url="http://127.0.0.1:1234/v1",
+            lm_model="test-model",
+            lm_timeout_sec=30.0,
         )
     )
     assert writable.is_file()
