@@ -4,5 +4,9 @@
   <span>URL</span>
   <textarea id="job-url" rows="3" placeholder="https://..."></textarea>
 </label>
-<button type="button" id="job-download" disabled>Download</button>
-<p class="hint">Download starts in a later milestone; config paths are editable now.</p>
+<div class="job-actions">
+  <button type="button" id="job-create">Create job</button>
+  <button type="button" id="job-resolve">Resolve tracks</button>
+</div>
+<p class="hint" id="job-status">No job yet.</p>
+<ul id="job-track-list" class="job-track-list" aria-live="polite"></ul>

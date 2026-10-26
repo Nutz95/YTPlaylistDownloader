@@ -4,6 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from ytpd.jobs.invalid_job_error import InvalidJobError
+from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_resume_plan_codec import JobResumePlanCodec
 from ytpd.jobs.job_resume_service import JobResumeService
 from ytpd.jobs.job_snapshot_codec import JobSnapshotCodec
@@ -11,15 +12,17 @@ from ytpd.jobs.job_store import JobStore
 
 
 class JobsApiHandler:
-    """HTTP handlers for creating, reading, and resuming jobs."""
+    """HTTP handlers for creating, reading, resolving, and resuming jobs."""
 
     def __init__(
         self,
         job_store: JobStore,
         resume_service: JobResumeService,
+        resolve_service: JobResolveService,
     ) -> None:
         self._job_store = job_store
         self._resume_service = resume_service
+        self._resolve_service = resolve_service
         self._codec = JobSnapshotCodec()
         self._resume_codec = JobResumePlanCodec()
 
@@ -67,3 +70,13 @@ class JobsApiHandler:
             status_code = 404 if message == "job not found" else 409
             return JSONResponse(status_code=status_code, content={"error": message})
         return JSONResponse(content=self._resume_codec.to_payload(plan))
+
+    def resolve_job(self, job_id: str) -> JSONResponse:
+        """Resolve playlist metadata for a job and persist tracks once."""
+        try:
+            snapshot = self._resolve_service.resolve_job(job_id)
+        except InvalidJobError as error:
+            message = str(error)
+            status_code = 404 if message == "job not found" else 400
+            return JSONResponse(status_code=status_code, content={"error": message})
+        return JSONResponse(content=self._codec.to_payload(snapshot))

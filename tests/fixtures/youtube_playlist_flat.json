@@ -1,0 +1,20 @@
+{
+  "id": "PLtest",
+  "title": "Demo playlist",
+  "entries": [
+    {
+      "id": "vid1",
+      "title": "First Track",
+      "uploader": "Artist One",
+      "duration": 180,
+      "webpage_url": "https://www.youtube.com/watch?v=vid1"
+    },
+    {
+      "id": "vid2",
+      "title": "Second Track",
+      "channel": "Artist Two",
+      "duration": 240.5,
+      "webpage_url": "https://www.youtube.com/watch?v=vid2"
+    }
+  ]
+}

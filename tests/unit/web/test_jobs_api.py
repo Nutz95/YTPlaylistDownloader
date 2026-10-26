@@ -4,6 +4,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.fakes.build_test_app import BuildTestApp
+from tests.fakes.fake_ytdlp_flat_playlist_client import FakeYtdlpFlatPlaylistClient
+from ytpd.resolve.ytdlp_flat_playlist_parser import YtdlpFlatPlaylistParser
+
+_FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
 
 
 def test_create_and_get_job(
@@ -60,3 +64,28 @@ def test_resume_unknown_job_returns_404(
     client = TestClient(BuildTestApp().build(tmp_path))
     response = client.post("/api/jobs/missing/resume")
     assert response.status_code == 404
+
+
+def test_resolve_youtube_job_persists_tracks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    fixture = (_FIXTURES / "youtube_playlist_flat.json").read_text(encoding="utf-8")
+    url = "https://www.youtube.com/playlist?list=PLtest"
+    entries = YtdlpFlatPlaylistParser().parse(fixture)
+    client = TestClient(
+        BuildTestApp().build(
+            tmp_path,
+            ytdlp_client=FakeYtdlpFlatPlaylistClient({url: entries}),
+        )
+    )
+    created = client.post("/api/jobs", json={"url": url}).json()
+    resolved = client.post(f"/api/jobs/{created['job_id']}/resolve")
+    assert resolved.status_code == 200
+    body = resolved.json()
+    assert body["source_kind"] == "youtube_playlist"
+    assert len(body["tracks"]) == 2
+    again = client.post(f"/api/jobs/{created['job_id']}/resolve")
+    assert again.status_code == 200
+    assert again.json()["tracks"] == body["tracks"]
