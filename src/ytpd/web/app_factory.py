@@ -6,8 +6,10 @@ from fastapi.templating import Jinja2Templates
 
 from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
+from ytpd.jobs.job_store import JobStore
 from ytpd.web.config_api_handler import ConfigApiHandler
 from ytpd.web.index_handler import IndexHandler
+from ytpd.web.jobs_api_handler import JobsApiHandler
 
 
 class AppFactory:
@@ -19,20 +21,26 @@ class AppFactory:
         static_dir: Path,
         config: AppConfig,
         config_store: AppConfigStore,
+        job_store: JobStore,
     ) -> None:
         self._templates_dir = templates_dir
         self._static_dir = static_dir
         self._config = config
         self._config_store = config_store
+        self._job_store = job_store
 
     def build(self) -> FastAPI:
-        """Create the app with templates, static assets, pages, and config API."""
+        """Create the app with templates, static assets, pages, and APIs."""
         templates = Jinja2Templates(directory=str(self._templates_dir))
         index_handler = IndexHandler(templates, self._config)
         config_handler = ConfigApiHandler(self._config_store)
+        jobs_handler = JobsApiHandler(self._job_store)
         app = FastAPI(title="YTPlaylistDownloader")
         app.mount("/static", StaticFiles(directory=str(self._static_dir)), name="static")
         app.add_api_route("/", index_handler.handle, methods=["GET"])
         app.add_api_route("/api/config", config_handler.get_config, methods=["GET"])
         app.add_api_route("/api/config", config_handler.put_config, methods=["PUT"])
+        app.add_api_route("/api/jobs", jobs_handler.create_job, methods=["POST"])
+        app.add_api_route("/api/jobs", jobs_handler.list_jobs, methods=["GET"])
+        app.add_api_route("/api/jobs/{job_id}", jobs_handler.get_job, methods=["GET"])
         return app

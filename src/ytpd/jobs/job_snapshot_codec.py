@@ -1,0 +1,131 @@
+import json
+
+from ytpd.domain.job_snapshot import JobSnapshot
+from ytpd.domain.job_status import JobStatus
+from ytpd.domain.source_kind import SourceKind
+from ytpd.domain.track_phase import TrackPhase
+from ytpd.domain.track_ref import TrackRef
+from ytpd.jobs.invalid_job_error import InvalidJobError
+from ytpd.web.job_json_payload import JobJsonPayload
+from ytpd.web.track_json_payload import TrackJsonPayload
+
+
+class JobSnapshotCodec:
+    """Convert job snapshots to/from the shared JSON payload contract."""
+
+    def to_payload(self, snapshot: JobSnapshot) -> JobJsonPayload:
+        """Serialize a snapshot into the API/checkpoint JSON shape."""
+        return {
+            "job_id": snapshot.job_id,
+            "source_url": snapshot.source_url,
+            "source_kind": snapshot.source_kind.value,
+            "status": snapshot.status.value,
+            "error_message": snapshot.error_message,
+            "tracks": [self._track_to_payload(track) for track in snapshot.tracks],
+        }
+
+    def from_json_text(self, text: str) -> JobSnapshot:
+        """Deserialize a JSON text blob into a typed snapshot."""
+        loaded = json.loads(text)
+        if not isinstance(loaded, dict):
+            raise InvalidJobError("job payload must be a JSON object")
+        job_id = loaded.get("job_id")
+        source_url = loaded.get("source_url")
+        source_kind = loaded.get("source_kind")
+        status = loaded.get("status")
+        error_message = loaded.get("error_message")
+        tracks_raw = loaded.get("tracks")
+        if not isinstance(job_id, str) or not isinstance(source_url, str):
+            raise InvalidJobError("job_id/source_url must be strings")
+        if not isinstance(source_kind, str) or not isinstance(status, str):
+            raise InvalidJobError("source_kind/status must be strings")
+        if error_message is not None and not isinstance(error_message, str):
+            raise InvalidJobError("error_message must be a string or null")
+        if not isinstance(tracks_raw, list):
+            raise InvalidJobError("tracks must be a list")
+        tracks_payload = [self._parse_track_mapping(item) for item in tracks_raw]
+        payload: JobJsonPayload = {
+            "job_id": job_id,
+            "source_url": source_url,
+            "source_kind": source_kind,
+            "status": status,
+            "error_message": error_message,
+            "tracks": tracks_payload,
+        }
+        return self.from_payload(payload)
+
+    def from_payload(self, payload: JobJsonPayload) -> JobSnapshot:
+        """Deserialize a JSON payload into a typed snapshot."""
+        tracks = [self._track_from_payload(item) for item in payload["tracks"]]
+        return JobSnapshot(
+            job_id=payload["job_id"],
+            source_url=payload["source_url"],
+            source_kind=SourceKind(payload["source_kind"]),
+            status=JobStatus(payload["status"]),
+            tracks=tracks,
+            error_message=payload["error_message"],
+        )
+
+    def _parse_track_mapping(self, item: TrackJsonPayload) -> TrackJsonPayload:
+        if not isinstance(item, dict):
+            raise InvalidJobError("track payload must be an object")
+        track_id = item.get("track_id")
+        title = item.get("title")
+        artist = item.get("artist")
+        duration_sec = item.get("duration_sec")
+        source_kind = item.get("source_kind")
+        phase = item.get("phase")
+        youtube_url = item.get("youtube_url")
+        deezer_id = item.get("deezer_id")
+        error_message = item.get("error_message")
+        if not isinstance(track_id, str) or not isinstance(title, str) or not isinstance(artist, str):
+            raise InvalidJobError("track_id/title/artist must be strings")
+        if duration_sec is not None and (
+            isinstance(duration_sec, bool) or not isinstance(duration_sec, int)
+        ):
+            raise InvalidJobError("duration_sec must be an int or null")
+        if not isinstance(source_kind, str) or not isinstance(phase, str):
+            raise InvalidJobError("track source_kind/phase must be strings")
+        if youtube_url is not None and not isinstance(youtube_url, str):
+            raise InvalidJobError("youtube_url must be a string or null")
+        if deezer_id is not None and not isinstance(deezer_id, str):
+            raise InvalidJobError("deezer_id must be a string or null")
+        if error_message is not None and not isinstance(error_message, str):
+            raise InvalidJobError("track error_message must be a string or null")
+        return {
+            "track_id": track_id,
+            "title": title,
+            "artist": artist,
+            "duration_sec": duration_sec,
+            "source_kind": source_kind,
+            "phase": phase,
+            "youtube_url": youtube_url,
+            "deezer_id": deezer_id,
+            "error_message": error_message,
+        }
+
+    def _track_to_payload(self, track: TrackRef) -> TrackJsonPayload:
+        return {
+            "track_id": track.track_id,
+            "title": track.title,
+            "artist": track.artist,
+            "duration_sec": track.duration_sec,
+            "source_kind": track.source_kind.value,
+            "phase": track.phase.value,
+            "youtube_url": track.youtube_url,
+            "deezer_id": track.deezer_id,
+            "error_message": track.error_message,
+        }
+
+    def _track_from_payload(self, item: TrackJsonPayload) -> TrackRef:
+        return TrackRef(
+            track_id=item["track_id"],
+            title=item["title"],
+            artist=item["artist"],
+            duration_sec=item["duration_sec"],
+            source_kind=SourceKind(item["source_kind"]),
+            phase=TrackPhase(item["phase"]),
+            youtube_url=item["youtube_url"],
+            deezer_id=item["deezer_id"],
+            error_message=item["error_message"],
+        )
