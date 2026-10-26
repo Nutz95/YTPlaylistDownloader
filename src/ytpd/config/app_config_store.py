@@ -25,12 +25,14 @@ class AppConfigStore:
         return config
 
     def save(self, config: AppConfig) -> AppConfig:
-        """Validate directories, write YAML atomically, and return the saved config."""
+        """Validate directories, persist cwd-relative paths, and return the saved config."""
+        work_absolute = self._path_validator.ensure_directory(config.work_dir)
+        dest_absolute = self._path_validator.ensure_directory(config.dest_dir)
         normalized = AppConfig(
             host=config.host,
             port=config.port,
-            work_dir=self._path_validator.ensure_directory(config.work_dir),
-            dest_dir=self._path_validator.ensure_directory(config.dest_dir),
+            work_dir=self._path_validator.to_storage_path(work_absolute),
+            dest_dir=self._path_validator.to_storage_path(dest_absolute),
         )
         self._writable_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {

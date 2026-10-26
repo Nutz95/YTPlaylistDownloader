@@ -26,8 +26,12 @@ def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.Monk
     reloaded = store.load()
     assert reloaded.host == "127.0.0.1"
     assert reloaded.port == 8765
+    assert not saved.work_dir.is_absolute()
+    assert not saved.dest_dir.is_absolute()
     assert reloaded.work_dir == saved.work_dir
     assert reloaded.dest_dir == saved.dest_dir
+    assert saved.work_dir.as_posix() == "work_data"
+    assert saved.dest_dir.as_posix() == "out_data"
 
 
 def test_rejects_empty_host() -> None:
