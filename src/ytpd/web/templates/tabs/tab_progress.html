@@ -1,3 +1,14 @@
 <h2>Progression</h2>
-<p>Global and per-media progress bars will appear here once jobs run.</p>
-<div class="progress-placeholder" aria-live="polite">No active job.</div>
+<p>Suivi global et barres par média actif.</p>
+<label class="field">
+  <span>Job id</span>
+  <input id="progress-job-id" type="text" placeholder="coller un job_id">
+</label>
+<button type="button" id="progress-watch">Watch</button>
+<div class="progress-global">
+  <div class="progress-label" id="progress-global-label">No active job.</div>
+  <div class="progress-track" aria-hidden="true">
+    <div class="progress-fill" id="progress-global-fill" style="width: 0%"></div>
+  </div>
+</div>
+<div id="progress-media-list" class="progress-media-list" aria-live="polite"></div>

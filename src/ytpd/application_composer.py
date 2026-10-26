@@ -3,6 +3,7 @@ from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
 from ytpd.config.writable_config_path import WritableConfigPath
 from ytpd.jobs.job_store import JobStore
+from ytpd.jobs.progress_calculator import ProgressCalculator
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
 from ytpd.runtime.python_version_guard import PythonVersionGuard
 from ytpd.runtime.sys_interpreter_version_provider import SysInterpreterVersionProvider
@@ -33,6 +34,7 @@ class ApplicationComposer:
             config,
             config_store,
             job_store,
+            ProgressCalculator(),
         ).build()
         return ComposedApplication(
             app=app,
