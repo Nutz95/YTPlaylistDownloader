@@ -1,7 +1,10 @@
+from typing import cast
+
 from ytpd.domain.media_progress import MediaProgress
 from ytpd.domain.progress_snapshot import ProgressSnapshot
 from ytpd.web.media_progress_json_payload import MediaProgressJsonPayload
 from ytpd.web.progress_snapshot_json_payload import ProgressSnapshotJsonPayload
+from ytpd.web.track_phase_name import TrackPhaseName
 
 
 class ProgressSnapshotCodec:
@@ -24,6 +27,6 @@ class ProgressSnapshotCodec:
         return {
             "track_id": media.track_id,
             "title": media.title,
-            "phase_label": media.phase_label,
+            "phase_label": cast(TrackPhaseName, media.phase.value),
             "detail": media.detail,
         }

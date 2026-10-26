@@ -8,6 +8,7 @@ from python_guardrails.guard_violation import GuardViolation
 from python_guardrails.inline_fake_class_guard import InlineFakeClassGuard
 from python_guardrails.monkeypatch_setattr_guard import MonkeypatchSetattrGuard
 from python_guardrails.nested_function_def_guard import NestedFunctionDefGuard
+from python_guardrails.object_setattr_guard import ObjectSetattrGuard
 from python_guardrails.owned_positional_tuple_guard import OwnedPositionalTupleGuard
 from python_guardrails.public_docstring_guard import PublicDocstringGuard
 from python_guardrails.python_structure_guard import PythonStructureGuard
@@ -27,6 +28,7 @@ def check_roots(
     check_owned_tuples: bool = True,
     check_inline_fakes: bool = True,
     check_monkeypatch: bool = True,
+    check_object_setattr: bool = True,
     check_public_docstrings: bool = True,
 ) -> list[GuardViolation]:
     """Run the standard SOLID guardrail set on the given roots."""
@@ -50,6 +52,8 @@ def check_roots(
         violations.extend(InlineFakeClassGuard().check(py_roots))
     if check_monkeypatch:
         violations.extend(MonkeypatchSetattrGuard().check(py_roots))
+    if check_object_setattr:
+        violations.extend(ObjectSetattrGuard().check(py_roots))
     if check_public_docstrings:
         violations.extend(PublicDocstringGuard().check(py_roots))
     return violations
@@ -75,6 +79,7 @@ def assert_roots_clean(
     check_owned_tuples: bool = True,
     check_inline_fakes: bool = True,
     check_monkeypatch: bool = True,
+    check_object_setattr: bool = True,
     check_public_docstrings: bool = True,
 ) -> None:
     """Raise AssertionError when any enabled guardrail reports a violation."""
@@ -90,6 +95,7 @@ def assert_roots_clean(
         check_owned_tuples=check_owned_tuples,
         check_inline_fakes=check_inline_fakes,
         check_monkeypatch=check_monkeypatch,
+        check_object_setattr=check_object_setattr,
         check_public_docstrings=check_public_docstrings,
     )
     if violations:
@@ -113,6 +119,7 @@ def assert_roots_within_baseline(
     check_owned_tuples: bool = True,
     check_inline_fakes: bool = True,
     check_monkeypatch: bool = True,
+    check_object_setattr: bool = True,
     check_public_docstrings: bool = True,
 ) -> None:
     """Progressive ratchet: counts per kind must not exceed baseline JSON."""
@@ -128,6 +135,7 @@ def assert_roots_within_baseline(
         check_owned_tuples=check_owned_tuples,
         check_inline_fakes=check_inline_fakes,
         check_monkeypatch=check_monkeypatch,
+        check_object_setattr=check_object_setattr,
         check_public_docstrings=check_public_docstrings,
     )
     assert_within_baseline(

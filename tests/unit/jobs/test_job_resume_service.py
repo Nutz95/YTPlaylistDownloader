@@ -29,14 +29,14 @@ def test_empty_tracks_plan_resolves_playlist(tmp_path: Path) -> None:
     job = store.create("https://example.test/list")
     plan = _planner({}).plan(job)
     assert plan.job_action is ResumeAction.RESOLVE_PLAYLIST
-    assert plan.decisions == []
+    assert plan.decisions == ()
     assert plan.is_actionable() is True
 
 
 def test_tracks_present_skip_resolve_and_choose_actions(tmp_path: Path) -> None:
     store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
     created = store.create("https://example.test/list")
-    tracks = [
+    tracks = (
         TrackRef(
             track_id="a",
             title="A",
@@ -59,7 +59,7 @@ def test_tracks_present_skip_resolve_and_choose_actions(tmp_path: Path) -> None:
             deezer_id="2",
             error_message=None,
         ),
-    ]
+    )
     job = store.save(
         JobSnapshot(
             job_id=created.job_id,

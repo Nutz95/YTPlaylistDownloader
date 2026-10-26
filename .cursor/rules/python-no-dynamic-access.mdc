@@ -12,6 +12,7 @@ Do not use dynamic access to paper over a missing contract.
 
 - `getattr(...)`, `hasattr(...)` to choose a business implementation or optional collaborator
 - `except AttributeError` to compensate for an incomplete fake or API
+- `object.__setattr__(...)` / `setattr(...)` (including frozen-dataclass list copies)
 - Owned `collections.namedtuple` / `typing.NamedTuple` / positional tuple value objects — use a `dataclass`
 
 ## Prefer
@@ -20,6 +21,7 @@ Do not use dynamic access to paper over a missing contract.
 - Complete fakes under `**/tests/fakes/`
 - `isinstance(...)` against a known type when discrimination is required
 - Explicit properties / fields instead of duck-typing
+- Frozen snapshots with collection fields: use `tuple[T, ...]` (no `__post_init__` setattr)
 
 ## Rare exemption
 

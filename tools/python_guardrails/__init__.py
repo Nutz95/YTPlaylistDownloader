@@ -17,6 +17,7 @@ from python_guardrails.guard_violation import GuardViolation
 from python_guardrails.inline_fake_class_guard import InlineFakeClassGuard
 from python_guardrails.monkeypatch_setattr_guard import MonkeypatchSetattrGuard
 from python_guardrails.nested_function_def_guard import NestedFunctionDefGuard
+from python_guardrails.object_setattr_guard import ObjectSetattrGuard
 from python_guardrails.owned_positional_tuple_guard import OwnedPositionalTupleGuard
 from python_guardrails.public_docstring_guard import PublicDocstringGuard
 from python_guardrails.python_structure_guard import PythonStructureGuard
@@ -30,6 +31,7 @@ __all__ = [
     "InlineFakeClassGuard",
     "MonkeypatchSetattrGuard",
     "NestedFunctionDefGuard",
+    "ObjectSetattrGuard",
     "OwnedPositionalTupleGuard",
     "PublicDocstringGuard",
     "PythonStructureGuard",

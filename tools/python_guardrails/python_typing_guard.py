@@ -17,7 +17,7 @@ class PythonTypingGuard:
         # Exclude runtime constructors like `values: list(...)` / `data: dict()`.
         self._patterns: list[tuple[str, re.Pattern[str]]] = [
             ("any_type", re.compile(r"(?:(?::|\|)\s*|->\s*)Any\b")),
-            # Allow object.__setattr__; ban object used as an annotation type.
+            # Ban `object` as an annotation type (runtime object.__setattr__ is a separate guard).
             ("object_type", re.compile(r"(?:(?::|\|)\s*|->\s*)object\b(?!\.)")),
             ("bare_dict", re.compile(r"(?:(?::|\|)\s*|->\s*)dict\b(?!\s*[\[(])")),
             ("bare_list", re.compile(r"(?:(?::|\|)\s*|->\s*)list\b(?!\s*[\[(])")),

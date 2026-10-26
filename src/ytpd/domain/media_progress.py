@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from ytpd.domain.track_phase import TrackPhase
+
 
 @dataclass(frozen=True)
 class MediaProgress:
@@ -7,5 +9,5 @@ class MediaProgress:
 
     track_id: str
     title: str
-    phase_label: str
+    phase: TrackPhase
     detail: str

@@ -17,7 +17,7 @@ class YoutubeResolver:
         entries = self._client.fetch_flat(url)
         if len(entries) == 0:
             raise YtdlpProbeError("youtube resolve returned no entries")
-        tracks = [
+        tracks = tuple(
             TrackRef(
                 track_id=entry.video_id,
                 title=entry.title,
@@ -30,5 +30,5 @@ class YoutubeResolver:
                 error_message=None,
             )
             for entry in entries
-        ]
+        )
         return PlaylistResolveResult(source_kind=source_kind, tracks=tracks)

@@ -10,10 +10,7 @@ class JobResumePlan:
 
     job_id: str
     job_action: ResumeAction
-    decisions: list[TrackResumeDecision]
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "decisions", list(self.decisions))
+    decisions: tuple[TrackResumeDecision, ...]
 
     def is_actionable(self) -> bool:
         """Return True when resolve or any track still needs pipeline work."""

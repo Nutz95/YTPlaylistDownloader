@@ -27,7 +27,7 @@ class DeezerTracksJsonParser:
             tracks.append(self._parse_track(item, index))
         next_raw = loaded.get("next")
         next_url = next_raw if isinstance(next_raw, str) and next_raw.strip() != "" else None
-        return DeezerTracksPage(tracks=tracks, next_url=next_url)
+        return DeezerTracksPage(tracks=tuple(tracks), next_url=next_url)
 
     def _parse_track(
         self,

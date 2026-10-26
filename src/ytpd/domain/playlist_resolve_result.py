@@ -9,7 +9,4 @@ class PlaylistResolveResult:
     """Resolved playlist or single-video metadata ready for checkpointing."""
 
     source_kind: SourceKind
-    tracks: list[TrackRef]
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "tracks", list(self.tracks))
+    tracks: tuple[TrackRef, ...]

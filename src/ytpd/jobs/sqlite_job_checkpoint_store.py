@@ -1,61 +1,55 @@
 import json
-import sqlite3
 from pathlib import Path
+
+from sqlalchemy import create_engine, select
+from sqlalchemy.dialects.sqlite import insert
 
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.jobs.job_snapshot_codec import JobSnapshotCodec
+from ytpd.jobs.jobs_checkpoint_table import JobsCheckpointTable
 
 
 class SqliteJobCheckpointStore:
-    """SQLite-backed checkpoint store for job snapshots."""
+    """SQLite-backed checkpoint store for job snapshots (SQLAlchemy Core)."""
 
     def __init__(self, database_path: Path) -> None:
-        self._database_path = database_path
         self._codec = JobSnapshotCodec()
-        self._database_path.parent.mkdir(parents=True, exist_ok=True)
-        self._initialize()
+        self._table = JobsCheckpointTable()
+        database_path.parent.mkdir(parents=True, exist_ok=True)
+        self._engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+        self._table.create_all(self._engine)
 
     def save(self, snapshot: JobSnapshot) -> None:
         """Upsert one job snapshot."""
         payload = self._codec.to_payload(snapshot)
-        with sqlite3.connect(self._database_path) as connection:
-            connection.execute(
-                """
-                INSERT INTO jobs (job_id, payload_json)
-                VALUES (?, ?)
-                ON CONFLICT(job_id) DO UPDATE SET payload_json = excluded.payload_json
-                """,
-                (snapshot.job_id, json.dumps(payload)),
-            )
-            connection.commit()
+        statement = insert(self._table.table).values(
+            job_id=snapshot.job_id,
+            payload_json=json.dumps(payload),
+        )
+        upsert = statement.on_conflict_do_update(
+            index_elements=[self._table.table.c.job_id],
+            set_={"payload_json": statement.excluded.payload_json},
+        )
+        with self._engine.begin() as connection:
+            connection.execute(upsert)
 
     def load(self, job_id: str) -> JobSnapshot | None:
         """Return a job by id when present."""
-        with sqlite3.connect(self._database_path) as connection:
-            row = connection.execute(
-                "SELECT payload_json FROM jobs WHERE job_id = ?",
-                (job_id,),
-            ).fetchone()
+        statement = (
+            select(self._table.table.c.payload_json)
+            .where(self._table.table.c.job_id == job_id)
+        )
+        with self._engine.connect() as connection:
+            row = connection.execute(statement).fetchone()
         if row is None:
             return None
-        return self._codec.from_json_text(row[0])
+        return self._codec.from_json_text(row.payload_json)
 
     def list_jobs(self) -> list[JobSnapshot]:
-        """Return all stored jobs ordered by rowid."""
-        with sqlite3.connect(self._database_path) as connection:
-            rows = connection.execute(
-                "SELECT payload_json FROM jobs ORDER BY rowid ASC"
-            ).fetchall()
-        return [self._codec.from_json_text(row[0]) for row in rows]
-
-    def _initialize(self) -> None:
-        with sqlite3.connect(self._database_path) as connection:
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS jobs (
-                    job_id TEXT PRIMARY KEY,
-                    payload_json TEXT NOT NULL
-                )
-                """
-            )
-            connection.commit()
+        """Return all stored jobs ordered by insertion rowid."""
+        statement = select(self._table.table.c.payload_json).order_by(
+            self._table.table.c.job_id.asc()
+        )
+        with self._engine.connect() as connection:
+            rows = connection.execute(statement).fetchall()
+        return [self._codec.from_json_text(row.payload_json) for row in rows]

@@ -1,4 +1,5 @@
 import json
+from typing import cast
 
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.job_status import JobStatus
@@ -7,7 +8,10 @@ from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
 from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.web.job_json_payload import JobJsonPayload
+from ytpd.web.job_status_name import JobStatusName
+from ytpd.web.source_kind_name import SourceKindName
 from ytpd.web.track_json_payload import TrackJsonPayload
+from ytpd.web.track_phase_name import TrackPhaseName
 
 
 class JobSnapshotCodec:
@@ -18,8 +22,8 @@ class JobSnapshotCodec:
         return {
             "job_id": snapshot.job_id,
             "source_url": snapshot.source_url,
-            "source_kind": snapshot.source_kind.value,
-            "status": snapshot.status.value,
+            "source_kind": cast(SourceKindName, snapshot.source_kind.value),
+            "status": cast(JobStatusName, snapshot.status.value),
             "error_message": snapshot.error_message,
             "tracks": [self._track_to_payload(track) for track in snapshot.tracks],
         }
@@ -43,12 +47,17 @@ class JobSnapshotCodec:
             raise InvalidJobError("error_message must be a string or null")
         if not isinstance(tracks_raw, list):
             raise InvalidJobError("tracks must be a list")
+        try:
+            SourceKind(source_kind)
+            JobStatus(status)
+        except ValueError as error:
+            raise InvalidJobError(str(error)) from error
         tracks_payload = [self._parse_track_mapping(item) for item in tracks_raw]
         payload: JobJsonPayload = {
             "job_id": job_id,
             "source_url": source_url,
-            "source_kind": source_kind,
-            "status": status,
+            "source_kind": cast(SourceKindName, source_kind),
+            "status": cast(JobStatusName, status),
             "error_message": error_message,
             "tracks": tracks_payload,
         }
@@ -56,7 +65,9 @@ class JobSnapshotCodec:
 
     def from_payload(self, payload: JobJsonPayload) -> JobSnapshot:
         """Deserialize a JSON payload into a typed snapshot."""
-        tracks = [self._track_from_payload(item) for item in payload["tracks"]]
+        tracks = tuple(
+            self._track_from_payload(item) for item in payload["tracks"]
+        )
         return JobSnapshot(
             job_id=payload["job_id"],
             source_url=payload["source_url"],
@@ -92,13 +103,18 @@ class JobSnapshotCodec:
             raise InvalidJobError("deezer_id must be a string or null")
         if error_message is not None and not isinstance(error_message, str):
             raise InvalidJobError("track error_message must be a string or null")
+        try:
+            SourceKind(source_kind)
+            TrackPhase(phase)
+        except ValueError as error:
+            raise InvalidJobError(str(error)) from error
         return {
             "track_id": track_id,
             "title": title,
             "artist": artist,
             "duration_sec": duration_sec,
-            "source_kind": source_kind,
-            "phase": phase,
+            "source_kind": cast(SourceKindName, source_kind),
+            "phase": cast(TrackPhaseName, phase),
             "youtube_url": youtube_url,
             "deezer_id": deezer_id,
             "error_message": error_message,
@@ -110,8 +126,8 @@ class JobSnapshotCodec:
             "title": track.title,
             "artist": track.artist,
             "duration_sec": track.duration_sec,
-            "source_kind": track.source_kind.value,
-            "phase": track.phase.value,
+            "source_kind": cast(SourceKindName, track.source_kind.value),
+            "phase": cast(TrackPhaseName, track.phase.value),
             "youtube_url": track.youtube_url,
             "deezer_id": track.deezer_id,
             "error_message": track.error_message,

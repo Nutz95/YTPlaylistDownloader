@@ -13,7 +13,7 @@ Never use `object`, `typing.Any`, bare `dict`, bare `list`, or bare `tuple` as t
 - Prefer `TypedDict`, `dataclass`, enums, and unions (`str | None`)
 - Annotate every public function parameter and return type
 - Use `dict[str, str]`, `list[Concrete]` (not variadic tuples)
-- Frozen models with `list[T]` must copy lists in `__post_init__`
+- Frozen models with collections use `tuple[T, ...]` (no `object.__setattr__` list copies)
 - **Exactly one** class / TypedDict / enum / Protocol per file
 - **No nested classes**
 - Multi-field returns -> dedicated dataclass, never stacked tuple returns

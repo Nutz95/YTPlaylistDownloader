@@ -10,7 +10,4 @@ class ProgressSnapshot:
 
     job_id: str
     global_progress: GlobalProgress
-    active_media: list[MediaProgress]
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "active_media", list(self.active_media))
+    active_media: tuple[MediaProgress, ...]

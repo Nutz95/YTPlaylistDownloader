@@ -13,11 +13,8 @@ class JobSnapshot:
     source_url: str
     source_kind: SourceKind
     status: JobStatus
-    tracks: list[TrackRef]
+    tracks: tuple[TrackRef, ...]
     error_message: str | None
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "tracks", list(self.tracks))
 
     def with_status(self, status: JobStatus) -> "JobSnapshot":
         """Return a copy of this snapshot with a different lifecycle status."""
