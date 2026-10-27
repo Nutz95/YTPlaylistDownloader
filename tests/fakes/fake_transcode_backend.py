@@ -1,4 +1,5 @@
 import threading
+from collections.abc import Callable
 
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.track_ref import TrackRef
@@ -15,10 +16,12 @@ class FakeTranscodeBackend:
         kind_value: TranscodeBackendKind,
         paths: TrackArtifactPaths,
         delay_sec: float = 0.0,
+        on_start: Callable[[TrackRef], None] | None = None,
     ) -> None:
         self._kind = kind_value
         self._paths = paths
         self._delay_sec = delay_sec
+        self._on_start = on_start
         self.calls: list[str] = []
         self._lock = threading.Lock()
 
@@ -28,6 +31,8 @@ class FakeTranscodeBackend:
 
     def transcode(self, job: JobSnapshot, track: TrackRef) -> TranscodeResult:
         """Create a fake MP3 for ``track``."""
+        if self._on_start is not None:
+            self._on_start(track)
         if self._delay_sec > 0:
             threading.Event().wait(self._delay_sec)
         with self._lock:

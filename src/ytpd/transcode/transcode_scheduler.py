@@ -28,14 +28,33 @@ class TranscodeScheduler:
         self._condition = threading.Condition()
         self._busy = {id(backend): False for backend in self._backends}
 
+    def backend_count(self) -> int:
+        """Return how many parallel encode slots this scheduler owns."""
+        return max(1, len(self._backends))
+
     def run(self, job: JobSnapshot, tracks: list[TrackRef]) -> list[TranscodeResult]:
         """Transcode ``tracks`` in parallel and upsert catalogue entries."""
         if len(tracks) == 0 or len(self._backends) == 0:
             return []
         with ThreadPoolExecutor(max_workers=len(self._backends)) as pool:
-            return list(pool.map(lambda track: self._transcode_one(job, track), tracks))
+            return list(
+                pool.map(lambda track: self.transcode_track(job, track), tracks)
+            )
 
-    def _transcode_one(self, job: JobSnapshot, track: TrackRef) -> TranscodeResult:
+    def transcode_track(
+        self,
+        job: JobSnapshot,
+        track: TrackRef,
+    ) -> TranscodeResult:
+        """Transcode one track (claims a backend) and upsert the catalogue on success."""
+        if len(self._backends) == 0:
+            return TranscodeResult(
+                track_id=track.track_id,
+                success=False,
+                output_path=None,
+                backend=None,
+                error_message="no transcode backend available",
+            )
         backend = self._claim_backend()
         try:
             result = backend.transcode(job, track)

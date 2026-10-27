@@ -1,23 +1,21 @@
 import shutil
 import subprocess
 
+from ytpd.runtime.subprocess_text_runner import SubprocessTextRunner
+
 
 class GpuCapabilityProbe:
     """Detect NVIDIA / Intel Arc availability from local tooling."""
+
+    def __init__(self) -> None:
+        self._runner = SubprocessTextRunner()
 
     def has_nvidia(self) -> bool:
         """True when ``nvidia-smi`` reports at least one GPU."""
         if shutil.which("nvidia-smi") is None:
             return False
         try:
-            completed = subprocess.run(
-                ["nvidia-smi", "-L"],
-                check=False,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=5.0,
-            )
+            completed = self._runner.run(["nvidia-smi", "-L"], 5.0)
         except OSError:
             return False
         except subprocess.TimeoutExpired:
@@ -29,13 +27,9 @@ class GpuCapabilityProbe:
         if shutil.which("ffmpeg") is None:
             return False
         try:
-            completed = subprocess.run(
+            completed = self._runner.run(
                 ["ffmpeg", "-hide_banner", "-hwaccels"],
-                check=False,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=5.0,
+                5.0,
             )
         except OSError:
             return False
