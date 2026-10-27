@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ytpd.domain.match_candidate import MatchCandidate
 
@@ -11,3 +11,4 @@ class MatchResult:
     matched: bool
     candidate: MatchCandidate | None
     error_message: str | None
+    candidates: list[MatchCandidate] = field(default_factory=list)

@@ -10,6 +10,7 @@ from ytpd.match.static_match_scorer import StaticMatchScorer
 from ytpd.match.youtube_candidate_fetcher import YoutubeCandidateFetcher
 from tests.fakes.counting_youtube_search_client import CountingYoutubeSearchClient
 from tests.fakes.fake_lm_studio_http_transport import FakeLmStudioHttpTransport
+from tests.fakes.fake_lm_studio_model_runtime import FakeLmStudioModelRuntime
 from tests.fakes.fake_resource_gate import FakeResourceGate
 from tests.fakes.fake_youtube_search_client import FakeYoutubeSearchClient
 
@@ -33,6 +34,7 @@ def test_cascade_searches_once_then_uses_llm() -> None:
         base_url="http://127.0.0.1:1234/v1",
         model="test-model",
         timeout_sec=1.0,
+        context_length=8192,
     )
     inner = FakeYoutubeSearchClient(
         {
@@ -59,7 +61,7 @@ def test_cascade_searches_once_then_uses_llm() -> None:
     matcher = CascadingYoutubeMatcher(
         YoutubeCandidateFetcher(search, StaticMatchScorer()),
         StaticMatchDecider(),
-        HttpLmStudioClient(transport, settings),
+        HttpLmStudioClient(transport, settings, FakeLmStudioModelRuntime()),
         gate,
     )
     result = matcher.match(_weak_hit_track())
@@ -76,6 +78,7 @@ def test_cascade_reports_offline_lm_studio() -> None:
         base_url="http://127.0.0.1:1234/v1",
         model="test-model",
         timeout_sec=1.0,
+        context_length=8192,
     )
     search = FakeYoutubeSearchClient(
         {
@@ -96,9 +99,64 @@ def test_cascade_reports_offline_lm_studio() -> None:
         HttpLmStudioClient(
             FakeLmStudioHttpTransport(["test-model"], [], offline=True),
             settings,
+            FakeLmStudioModelRuntime(),
         ),
         FakeResourceGate(),
     )
     result = matcher.match(_weak_hit_track())
     assert result.matched is False
     assert result.error_message == "LM Studio est hors ligne ou injoignable."
+
+
+def test_cascade_retries_after_verify_reject_with_exclusion() -> None:
+    settings = LmStudioSettings(
+        base_url="http://127.0.0.1:1234/v1",
+        model="test-model",
+        timeout_sec=1.0,
+        context_length=8192,
+    )
+    rejected = YtdlpFlatEntry(
+        video_id="bad",
+        title="Wrong Cover",
+        uploader="Other",
+        duration_sec=10,
+        webpage_url="https://youtu.be/bad",
+    )
+    replacement = YtdlpFlatEntry(
+        video_id="good",
+        title="Nobody - Obscure (Official Audio)",
+        uploader="Nobody",
+        duration_sec=200,
+        webpage_url="https://youtu.be/good",
+    )
+    inner = FakeYoutubeSearchClient(
+        {
+            "Nobody Obscure": [rejected],
+            "Nobody Obscure official audio": [rejected, replacement],
+        }
+    )
+    search = CountingYoutubeSearchClient(inner)
+    transport = FakeLmStudioHttpTransport(
+        ["test-model"],
+        [
+            '{"candidate_index": 0, "reason": "only option"}',
+            '{"candidate_index": null, "reason": "duration mismatch"}',
+            '{"candidate_index": 0, "reason": "better duration"}',
+            '{"candidate_index": 0, "reason": "confirmed"}',
+        ],
+    )
+    matcher = CascadingYoutubeMatcher(
+        YoutubeCandidateFetcher(search, StaticMatchScorer()),
+        StaticMatchDecider(),
+        HttpLmStudioClient(transport, settings, FakeLmStudioModelRuntime()),
+        FakeResourceGate(),
+    )
+    result = matcher.match(_weak_hit_track())
+    assert search.search_calls >= 2
+    assert transport.chat_calls == 4
+    assert result.matched is True
+    assert result.candidate is not None
+    assert result.candidate.youtube_url == "https://youtu.be/good"
+    assert any(
+        "Previously rejected because:" in prompt for prompt in transport.user_prompts
+    )
