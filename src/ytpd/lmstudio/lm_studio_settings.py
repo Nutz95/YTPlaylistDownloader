@@ -8,3 +8,4 @@ class LmStudioSettings:
     base_url: str
     model: str
     timeout_sec: float
+    context_length: int

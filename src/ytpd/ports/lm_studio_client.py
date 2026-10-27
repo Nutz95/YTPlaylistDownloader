@@ -12,6 +12,7 @@ class LmStudioClient(Protocol):
         self,
         track: TrackRef,
         candidates: list[MatchCandidate],
+        rejection_context: str | None = None,
     ) -> LmStudioMatchChoice:
         """Return the chosen candidate index, or a failure choice."""
 

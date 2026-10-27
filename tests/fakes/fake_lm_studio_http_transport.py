@@ -1,5 +1,6 @@
 from ytpd.domain.lm_studio_chat_response import LmStudioChatResponse
 from ytpd.domain.lm_studio_models_response import LmStudioModelsResponse
+from ytpd.domain.lm_studio_response_format_payload import LmStudioResponseFormatPayload
 from ytpd.lmstudio.lm_studio_error import LmStudioError
 
 
@@ -16,6 +17,8 @@ class FakeLmStudioHttpTransport:
         self._chat_replies = list(chat_replies)
         self._offline = offline
         self.chat_calls = 0
+        self.last_response_format: LmStudioResponseFormatPayload | None = None
+        self.user_prompts: list[str] = []
 
     def get_models(self) -> LmStudioModelsResponse:
         """Return configured models or raise when offline."""
@@ -28,6 +31,7 @@ class FakeLmStudioHttpTransport:
         model: str,
         system_prompt: str,
         user_prompt: str,
+        response_format: LmStudioResponseFormatPayload,
     ) -> LmStudioChatResponse:
         """Return the next scripted chat reply."""
         if self._offline:
@@ -35,4 +39,6 @@ class FakeLmStudioHttpTransport:
         if len(self._chat_replies) == 0:
             raise LmStudioError("réponse chat LM Studio vide")
         self.chat_calls += 1
+        self.last_response_format = response_format
+        self.user_prompts.append(user_prompt)
         return LmStudioChatResponse(content=self._chat_replies.pop(0))

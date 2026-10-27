@@ -4,6 +4,7 @@ from ytpd.domain.match_score import MatchScore
 from ytpd.domain.source_kind import SourceKind
 from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
+from ytpd.jobs.job_cancel_flag import JobCancelFlag
 from ytpd.match.match_pool import MatchPool
 from tests.fakes.fake_youtube_matcher import FakeYoutubeMatcher
 
@@ -66,6 +67,6 @@ def test_pool_matches_pending_tracks_in_parallel_order_stable() -> None:
             ),
         }
     )
-    results = MatchPool(matcher, max_workers=4).run(tracks)
+    results = MatchPool(matcher, max_workers=4, cancel_flag=JobCancelFlag()).run(tracks)
     assert [item.track_id for item in results] == ["a", "c"]
     assert set(matcher.calls) == {"a", "c"}

@@ -25,3 +25,12 @@ def test_parse_null_index() -> None:
 def test_parse_rejects_invalid_json() -> None:
     with pytest.raises(LmStudioError):
         LmStudioMatchJsonParser().parse("not-json", 1)
+
+
+def test_parse_strips_think_blocks() -> None:
+    result = LmStudioMatchJsonParser().parse(
+        '<think>long reasoning</think>{"candidate_index": 0, "reason": "ok"}',
+        2,
+    )
+    assert result.candidate_index == 0
+    assert result.error_message is None

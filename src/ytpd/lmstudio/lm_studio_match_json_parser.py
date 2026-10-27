@@ -1,8 +1,12 @@
 import json
+import re
 
 from ytpd.domain.lm_studio_match_choice import LmStudioMatchChoice
 from ytpd.domain.lm_studio_match_json import LmStudioMatchJson
 from ytpd.lmstudio.lm_studio_error import LmStudioError
+
+_THINK_BLOCK = re.compile(r"<think>[\s\S]*?</think>", re.IGNORECASE)
+_THINK_UNCLOSED = re.compile(r"<think>[\s\S]*$", re.IGNORECASE)
 
 
 class LmStudioMatchJsonParser:
@@ -42,8 +46,10 @@ class LmStudioMatchJsonParser:
         return LmStudioMatchChoice(candidate_index=index, error_message=None)
 
     def _extract_json_object(self, content: str) -> str:
-        start = content.find("{")
-        end = content.rfind("}")
+        cleaned = _THINK_BLOCK.sub("", content)
+        cleaned = _THINK_UNCLOSED.sub("", cleaned).strip()
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
         if start < 0 or end <= start:
             raise LmStudioError("réponse LLM JSON introuvable")
-        return content[start : end + 1]
+        return cleaned[start : end + 1]
