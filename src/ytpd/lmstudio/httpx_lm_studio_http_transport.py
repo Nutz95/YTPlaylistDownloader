@@ -1,11 +1,19 @@
 import httpx
 
+from ytpd.domain.lm_studio_chat_message_payload import LmStudioChatMessagePayload
 from ytpd.domain.lm_studio_chat_response import LmStudioChatResponse
 from ytpd.domain.lm_studio_models_response import LmStudioModelsResponse
+from ytpd.domain.lm_studio_response_format_payload import LmStudioResponseFormatPayload
+from ytpd.lmstudio.lm_studio_chat_message_text import LmStudioChatMessageText
 from ytpd.lmstudio.lm_studio_error import LmStudioError
 from ytpd.lmstudio.lm_studio_settings import LmStudioSettings
 
 _OFFLINE_MESSAGE = "LM Studio est hors ligne ou injoignable."
+# Thinking models often burn most of a small budget on reasoning before JSON.
+_MAX_COMPLETION_TOKENS = 512
+# Top-level fields (not extra_body): LM Studio / llama.cpp read these on raw HTTP.
+_REASONING_EFFORT = "none"
+_CHAT_TEMPLATE_KWARGS: dict[str, bool] = {"enable_thinking": False}
 
 
 class HttpxLmStudioHttpTransport:
@@ -13,10 +21,8 @@ class HttpxLmStudioHttpTransport:
 
     def __init__(self, settings: LmStudioSettings) -> None:
         self._settings = settings
-        self._client = httpx.Client(
-            base_url=settings.base_url.rstrip("/") + "/",
-            timeout=settings.timeout_sec,
-        )
+        self._client = self._new_client()
+        self._message_text = LmStudioChatMessageText()
 
     def get_models(self) -> LmStudioModelsResponse:
         """GET ``models`` and return reported model ids."""
@@ -46,8 +52,9 @@ class HttpxLmStudioHttpTransport:
         model: str,
         system_prompt: str,
         user_prompt: str,
+        response_format: LmStudioResponseFormatPayload,
     ) -> LmStudioChatResponse:
-        """POST ``chat/completions`` and return the assistant content."""
+        """POST ``chat/completions`` with LM Studio structured outputs."""
         body = {
             "model": model,
             "messages": [
@@ -55,6 +62,10 @@ class HttpxLmStudioHttpTransport:
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": 0,
+            "response_format": response_format,
+            "max_tokens": _MAX_COMPLETION_TOKENS,
+            "reasoning_effort": _REASONING_EFFORT,
+            "chat_template_kwargs": _CHAT_TEMPLATE_KWARGS,
         }
         try:
             response = self._client.post("chat/completions", json=body)
@@ -75,11 +86,32 @@ class HttpxLmStudioHttpTransport:
         message = first.get("message")
         if not isinstance(message, dict):
             raise LmStudioError("réponse chat LM Studio invalide")
-        content = message.get("content")
-        if not isinstance(content, str) or content.strip() == "":
-            raise LmStudioError("réponse chat LM Studio vide")
+        finish_raw = first.get("finish_reason")
+        finish_reason = finish_raw if isinstance(finish_raw, str) else None
+        raw_content = message.get("content")
+        raw_reasoning_content = message.get("reasoning_content")
+        raw_reasoning = message.get("reasoning")
+        typed_message: LmStudioChatMessagePayload = {
+            "content": raw_content if isinstance(raw_content, str) else None,
+            "reasoning_content": (
+                raw_reasoning_content if isinstance(raw_reasoning_content, str) else None
+            ),
+            "reasoning": raw_reasoning if isinstance(raw_reasoning, str) else None,
+        }
+        content = self._message_text.extract(typed_message, finish_reason)
         return LmStudioChatResponse(content=content)
+
+    def abort(self) -> None:
+        """Close the HTTP client to unblock in-flight chat calls, then recreate it."""
+        self._client.close()
+        self._client = self._new_client()
 
     def close(self) -> None:
         """Close the underlying HTTP client."""
         self._client.close()
+
+    def _new_client(self) -> httpx.Client:
+        return httpx.Client(
+            base_url=self._settings.base_url.rstrip("/") + "/",
+            timeout=self._settings.timeout_sec,
+        )
