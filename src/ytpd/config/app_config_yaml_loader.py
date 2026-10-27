@@ -51,6 +51,17 @@ class AppConfigYamlLoader:
             lm_timeout_sec, (int, float)
         ):
             raise InvalidAppConfigError("lm_timeout_sec must be a number")
+        cookies_browser = loaded.get("youtube_cookies_from_browser", "")
+        if not isinstance(cookies_browser, str):
+            raise InvalidAppConfigError(
+                "youtube_cookies_from_browser must be a string"
+            )
+        cookies_file = loaded.get("youtube_cookies_file", "")
+        if not isinstance(cookies_file, str):
+            raise InvalidAppConfigError("youtube_cookies_file must be a string")
+        ffmpeg_path = loaded.get("ffmpeg_path", "")
+        if not isinstance(ffmpeg_path, str):
+            raise InvalidAppConfigError("ffmpeg_path must be a string")
         return {
             "bind_host": bind_host,
             "bind_port": bind_port,
@@ -59,4 +70,7 @@ class AppConfigYamlLoader:
             "lm_base_url": lm_base_url,
             "lm_model": lm_model,
             "lm_timeout_sec": float(lm_timeout_sec),
+            "youtube_cookies_from_browser": cookies_browser,
+            "youtube_cookies_file": cookies_file,
+            "ffmpeg_path": ffmpeg_path,
         }

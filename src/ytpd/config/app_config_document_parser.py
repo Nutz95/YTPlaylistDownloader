@@ -31,6 +31,17 @@ class AppConfigDocumentParser:
         lm_timeout_sec = float(document["lm_timeout_sec"])
         if lm_timeout_sec <= 0:
             raise InvalidAppConfigError("lm_timeout_sec must be positive")
+        cookies_browser = document.get("youtube_cookies_from_browser", "")
+        if not isinstance(cookies_browser, str):
+            raise InvalidAppConfigError(
+                "youtube_cookies_from_browser must be a string"
+            )
+        cookies_file = document.get("youtube_cookies_file", "")
+        if not isinstance(cookies_file, str):
+            raise InvalidAppConfigError("youtube_cookies_file must be a string")
+        ffmpeg_path = document.get("ffmpeg_path", "")
+        if not isinstance(ffmpeg_path, str):
+            raise InvalidAppConfigError("ffmpeg_path must be a string")
         return AppConfig(
             host=host,
             port=port,
@@ -39,4 +50,7 @@ class AppConfigDocumentParser:
             lm_base_url=document["lm_base_url"].strip(),
             lm_model=document["lm_model"].strip(),
             lm_timeout_sec=lm_timeout_sec,
+            youtube_cookies_from_browser=cookies_browser.strip(),
+            youtube_cookies_file=cookies_file.strip(),
+            ffmpeg_path=ffmpeg_path.strip(),
         )

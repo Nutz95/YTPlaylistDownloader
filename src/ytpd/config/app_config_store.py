@@ -40,6 +40,9 @@ class AppConfigStore:
             lm_base_url=config.lm_base_url,
             lm_model=config.lm_model,
             lm_timeout_sec=config.lm_timeout_sec,
+            youtube_cookies_from_browser=config.youtube_cookies_from_browser,
+            youtube_cookies_file=config.youtube_cookies_file,
+            ffmpeg_path=config.ffmpeg_path,
         )
         self._writable_path.parent.mkdir(parents=True, exist_ok=True)
         document = self.to_document(normalized)
@@ -68,6 +71,9 @@ class AppConfigStore:
             "lm_base_url": config.lm_base_url,
             "lm_model": config.lm_model,
             "lm_timeout_sec": config.lm_timeout_sec,
+            "youtube_cookies_from_browser": config.youtube_cookies_from_browser,
+            "youtube_cookies_file": config.youtube_cookies_file,
+            "ffmpeg_path": config.ffmpeg_path,
         }
 
     def _read_packaged_default(self) -> str:

@@ -5,3 +5,6 @@ dest_dir: "_out"
 lm_base_url: "http://127.0.0.1:1234/v1"
 lm_model: "qwen3.8-27b-gsq-rco"
 lm_timeout_sec: 60.0
+youtube_cookies_from_browser: "brave"
+youtube_cookies_file: ""
+ffmpeg_path: ""
