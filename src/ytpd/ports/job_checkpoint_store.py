@@ -14,3 +14,6 @@ class JobCheckpointStore(Protocol):
 
     def list_jobs(self) -> list[JobSnapshot]:
         """Return all stored jobs ordered by creation time when available."""
+
+    def delete(self, job_id: str) -> bool:
+        """Remove one job by id. Return True when a row was deleted."""

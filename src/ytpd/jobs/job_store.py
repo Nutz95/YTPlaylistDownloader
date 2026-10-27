@@ -41,3 +41,7 @@ class JobStore:
         """Persist an updated snapshot and return it."""
         self._checkpoint_store.save(snapshot)
         return snapshot
+
+    def delete(self, job_id: str) -> bool:
+        """Remove one job by id. Return True when a job was deleted."""
+        return self._checkpoint_store.delete(job_id)

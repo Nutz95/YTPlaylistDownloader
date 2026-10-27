@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, delete, select
 from sqlalchemy.dialects.sqlite import insert
 
 from ytpd.domain.job_snapshot import JobSnapshot
@@ -53,3 +53,12 @@ class SqliteJobCheckpointStore:
         with self._engine.connect() as connection:
             rows = connection.execute(statement).fetchall()
         return [self._codec.from_json_text(row.payload_json) for row in rows]
+
+    def delete(self, job_id: str) -> bool:
+        """Remove one job by id. Return True when a row was deleted."""
+        statement = delete(self._table.table).where(
+            self._table.table.c.job_id == job_id
+        )
+        with self._engine.begin() as connection:
+            result = connection.execute(statement)
+        return int(result.rowcount or 0) > 0

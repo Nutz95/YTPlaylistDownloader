@@ -1,8 +1,30 @@
+.job-actions-groups {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0.85rem 0 0.5rem;
+}
+
+.job-action-group {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem 0.85rem;
+  background: color-mix(in srgb, var(--bg-input) 88%, transparent);
+}
+
+.job-action-group h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.job-action-group .hint {
+  margin: 0 0 0.55rem;
+}
+
 .job-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
-  margin: 0.85rem 0 0.5rem;
+  margin: 0;
 }
 
 .job-list-panel {
@@ -24,13 +46,20 @@
   overflow: auto;
 }
 
+.job-list-row {
+  display: flex;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
 .job-list-item {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0.55rem 0.7rem;
   background: var(--bg-input);
   text-align: left;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   color: inherit;
   cursor: pointer;
 }
@@ -45,16 +74,57 @@
   margin-top: 0.2rem;
 }
 
+.job-list-delete {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.job-list-delete:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.job-live-panel {
+  margin: 1rem 0 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-input));
+}
+
+.job-live-panel h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.job-live-panel #job-fail-heading {
+  margin-top: 0.85rem;
+}
+
+.job-live-list,
+.job-fail-list,
 .job-track-list {
   list-style: none;
-  margin: 1rem 0 0;
+  margin: 0.45rem 0 0;
   padding: 0;
   display: grid;
   gap: 0.45rem;
-  max-height: 22rem;
+  max-height: 14rem;
   overflow: auto;
 }
 
+.job-track-list {
+  max-height: 22rem;
+}
+
+.job-live-list li,
+.job-fail-list li,
 .job-track-list li {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -62,4 +132,147 @@
   background: var(--bg-input);
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.job-live-list li.is-active {
+  border-color: var(--accent);
+  color: inherit;
+}
+
+.job-fail-list li.is-failed {
+  border-color: #c44;
+  color: inherit;
+}
+
+.failure-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.failure-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+}
+
+.failure-row-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.failure-copy-btn,
+.failure-override-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.failure-copy-btn:hover,
+.failure-override-btn:hover {
+  color: inherit;
+  border-color: var(--accent);
+}
+
+.failure-copy-btn.is-copied,
+.failure-override-btn.is-applied {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.failure-override-panel {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+  align-items: center;
+}
+
+.failure-override-panel[hidden] {
+  display: none !important;
+}
+
+.failure-override-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.failure-override-apply {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.failure-override-apply:hover {
+  border-color: var(--accent);
+}
+
+.failure-candidate-list {
+  list-style: none;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.failure-candidate-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.failure-candidate-meta {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.failure-candidate-use {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.failure-candidate-use:hover {
+  border-color: var(--accent);
+}
+
+.job-track-list li.is-active {
+  border-color: var(--accent);
+  color: inherit;
+}
+
+.job-track-list li.is-failed {
+  border-color: #c44;
 }

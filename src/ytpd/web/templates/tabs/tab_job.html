@@ -4,21 +4,52 @@
   <span>URL</span>
   <textarea id="job-url" rows="3" placeholder="https://..."></textarea>
 </label>
-<div class="job-actions">
-  <button type="button" id="job-create">Create job</button>
-  <button type="button" id="job-run">Run pipeline</button>
-  <button type="button" id="job-cancel">Cancel</button>
-  <button type="button" id="job-resolve">Resolve tracks</button>
-  <button type="button" id="job-match">Match YouTube</button>
-  <button type="button" id="job-download">Download</button>
-  <button type="button" id="job-transcode">Transcode MP3</button>
-  <button type="button" id="job-resume">Resume</button>
-  <button type="button" id="job-refresh-list">Refresh jobs</button>
+<div class="job-actions-groups">
+  <section class="job-action-group" aria-labelledby="job-group-create">
+    <h3 id="job-group-create">1 · Create</h3>
+    <div class="job-actions">
+      <button type="button" id="job-create">Create job</button>
+    </div>
+  </section>
+  <section class="job-action-group" aria-labelledby="job-group-pipeline">
+    <h3 id="job-group-pipeline">2 · Pipeline</h3>
+    <p class="hint">Run starts (or restarts) the full pipeline. Resume continues an interrupted / failed / paused job from the next pending track actions.</p>
+    <div class="job-actions">
+      <button type="button" id="job-run">Run pipeline</button>
+      <button type="button" id="job-resume">Resume pipeline</button>
+      <button type="button" id="job-retry-failed">Retry failures</button>
+      <button type="button" id="job-cancel">Cancel</button>
+    </div>
+    <p class="hint">Failures are listed below and logged to <code>_work/&lt;job-id&gt;/failures.log</code>. Retry failures resets failed tracks then restarts the pipeline.</p>
+  </section>
+  <section class="job-action-group" aria-labelledby="job-group-steps">
+    <h3 id="job-group-steps">3 · Manual steps</h3>
+    <p class="hint">Optional: run one stage at a time (blocks until that stage finishes).</p>
+    <div class="job-actions">
+      <button type="button" id="job-resolve">Resolve tracks</button>
+      <button type="button" id="job-match">Match YouTube</button>
+      <button type="button" id="job-download">Download</button>
+      <button type="button" id="job-transcode">Transcode MP3</button>
+    </div>
+  </section>
+  <section class="job-action-group" aria-labelledby="job-group-jobs">
+    <h3 id="job-group-jobs">Jobs</h3>
+    <div class="job-actions">
+      <button type="button" id="job-refresh-list">Refresh jobs</button>
+    </div>
+  </section>
 </div>
 <section class="job-list-panel" aria-labelledby="job-list-heading">
   <h3 id="job-list-heading">Saved jobs</h3>
-  <p class="hint">Select a job after restart — no need to copy a job id.</p>
+  <p class="hint">Select a job after restart — no need to copy a job id. Use Supprimer to drop a finished job (MP3s in the output folder are kept).</p>
   <ul id="job-list" class="job-list" aria-live="polite"></ul>
 </section>
 <p class="hint" id="job-status">No job selected.</p>
+<section class="job-live-panel" aria-labelledby="job-live-heading">
+  <h3 id="job-live-heading">Now working</h3>
+  <p class="hint" id="job-live-label">No active work.</p>
+  <ul id="job-live-list" class="job-live-list" aria-live="polite"></ul>
+  <h3 id="job-fail-heading">Recent failures</h3>
+  <ul id="job-fail-list" class="job-fail-list" aria-live="polite"></ul>
+</section>
 <ul id="job-track-list" class="job-track-list" aria-live="polite"></ul>

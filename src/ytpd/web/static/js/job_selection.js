@@ -28,11 +28,19 @@
     );
   }
 
+  function clearSelectedJobId() {
+    selectedJobId = "";
+    window.dispatchEvent(
+      new CustomEvent("ytpd-job-cleared", { detail: { jobId: "" } })
+    );
+  }
+
   window.YtpdJobSelection = {
     getSelectedJobId() {
       return selectedJobId;
     },
     setSelectedJobId,
+    clearSelectedJobId,
     shortId,
     pickPreferredJob,
   };

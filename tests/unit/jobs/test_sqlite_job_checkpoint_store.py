@@ -37,3 +37,19 @@ def test_save_load_preserves_tracks(tmp_path: Path) -> None:
     assert len(loaded.tracks) == 1
     assert loaded.tracks[0].title == "Song"
     assert loaded.tracks[0].youtube_url == "https://youtu.be/abc"
+
+
+def test_delete_removes_job(tmp_path: Path) -> None:
+    store = SqliteJobCheckpointStore(tmp_path / "jobs.db")
+    snapshot = JobSnapshot(
+        job_id="job-del",
+        source_url="https://youtu.be/del",
+        source_kind=SourceKind.YOUTUBE_VIDEO,
+        status=JobStatus.COMPLETED,
+        tracks=[],
+        error_message=None,
+    )
+    store.save(snapshot)
+    assert store.delete("job-del") is True
+    assert store.load("job-del") is None
+    assert store.delete("job-del") is False
