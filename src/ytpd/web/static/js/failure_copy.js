@@ -20,21 +20,28 @@
     return Promise.resolve();
   }
 
-  function artistTitleText(media) {
-    return `${media.artist || ""} ${media.title || ""}`.trim();
+  function failureHeadline(media) {
+    return `${media.artist} — ${media.title}`;
   }
 
-  function formatDuration(seconds) {
-    if (seconds == null || Number.isNaN(Number(seconds))) {
-      return "?";
-    }
-    const total = Math.max(0, Math.floor(Number(seconds)));
-    const minutes = Math.floor(total / 60);
-    const rem = total % 60;
-    return `${minutes}:${String(rem).padStart(2, "0")}`;
+  function failureMeta(media) {
+    return media.detail
+      ? `${media.phase_label} — ${media.detail}`
+      : media.phase_label || "";
   }
 
-  function createCopyButton(media) {
+  function failureLine(media) {
+    const detail = media.detail || media.phase_label || "";
+    return detail ? `${failureHeadline(media)}: ${detail}` : failureHeadline(media);
+  }
+
+  function syncRowMedia(item, media) {
+    item.dataset.trackId = media.track_id || "";
+    item.dataset.artist = media.artist || "";
+    item.dataset.title = media.title || "";
+  }
+
+  function createCopyButton(row) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "failure-copy-btn";
@@ -44,7 +51,7 @@
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      const text = artistTitleText(media);
+      const text = `${row.dataset.artist || ""} ${row.dataset.title || ""}`.trim();
       if (!text) {
         return;
       }
@@ -56,7 +63,7 @@
     return button;
   }
 
-  function createOverridePanel(media, onYoutubeOverride) {
+  function createOverridePanel(trackId, onYoutubeOverride) {
     const panel = document.createElement("div");
     panel.className = "failure-override-panel";
     panel.hidden = true;
@@ -71,10 +78,10 @@
     apply.textContent = "Appliquer";
     const submit = () => {
       const youtubeUrl = input.value.trim();
-      if (!youtubeUrl || !media.track_id || !onYoutubeOverride) {
+      if (!youtubeUrl || !trackId || !onYoutubeOverride) {
         return;
       }
-      onYoutubeOverride(media.track_id, youtubeUrl);
+      onYoutubeOverride(trackId, youtubeUrl);
     };
     apply.addEventListener("click", (event) => {
       event.preventDefault();
@@ -93,7 +100,7 @@
     return panel;
   }
 
-  function createOverrideButton(media, onYoutubeOverride, panel) {
+  function createOverrideButton(panel) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "failure-override-btn";
@@ -103,9 +110,6 @@
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (!media.track_id || !onYoutubeOverride || !panel) {
-        return;
-      }
       panel.hidden = !panel.hidden;
       if (!panel.hidden) {
         const input = panel.querySelector(".failure-override-input");
@@ -113,17 +117,26 @@
           input.focus();
           input.select();
         }
-        button.classList.add("is-applied");
+        button.classList.add("is-open");
       } else {
-        button.classList.remove("is-applied");
+        button.classList.remove("is-open");
       }
     });
     return button;
   }
 
-  function createCandidateList(media, onYoutubeOverride) {
-    const candidates = Array.isArray(media.candidates) ? media.candidates : [];
-    if (candidates.length === 0 || !onYoutubeOverride) {
+  function formatDuration(seconds) {
+    if (seconds == null || Number.isNaN(Number(seconds))) {
+      return "?";
+    }
+    const total = Math.max(0, Math.floor(Number(seconds)));
+    const minutes = Math.floor(total / 60);
+    const rem = total % 60;
+    return `${minutes}:${String(rem).padStart(2, "0")}`;
+  }
+
+  function createCandidateList(trackId, candidates, onYoutubeOverride) {
+    if (!Array.isArray(candidates) || candidates.length === 0 || !onYoutubeOverride) {
       return null;
     }
     const list = document.createElement("ul");
@@ -145,10 +158,10 @@
       useButton.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        if (!media.track_id || !candidate.youtube_url) {
+        if (!trackId || !candidate.youtube_url) {
           return;
         }
-        onYoutubeOverride(media.track_id, candidate.youtube_url);
+        onYoutubeOverride(trackId, candidate.youtube_url);
       });
       item.append(meta, useButton);
       list.appendChild(item);
@@ -156,51 +169,130 @@
     return list;
   }
 
-  function appendFailureItem(container, media, options) {
+  function updateFailureLabels(item, media, useCard) {
+    syncRowMedia(item, media);
+    if (useCard) {
+      const title = item.querySelector("strong");
+      const meta = item.querySelector(".meta");
+      if (title) {
+        title.textContent = failureHeadline(media);
+      }
+      if (meta) {
+        meta.textContent = failureMeta(media);
+      }
+      return;
+    }
+    const line = item.querySelector(".failure-row-body > span");
+    if (line) {
+      line.textContent = failureLine(media);
+    }
+  }
+
+  function replaceCandidates(item, media, onYoutubeOverride) {
+    const body = item.querySelector(".failure-row-body");
+    if (!body) {
+      return;
+    }
+    const previous = body.querySelector(".failure-candidate-list");
+    if (previous) {
+      previous.remove();
+    }
+    const candidates = createCandidateList(
+      media.track_id,
+      media.candidates,
+      onYoutubeOverride
+    );
+    if (candidates) {
+      body.append(candidates);
+    }
+  }
+
+  function buildFailureItem(media, options) {
     const useCard = Boolean(options && options.card);
     const onYoutubeOverride = options && options.onYoutubeOverride;
     const item = document.createElement(useCard ? "div" : "li");
     item.className = useCard
       ? "progress-media-card is-failed failure-row"
       : "is-failed failure-row";
+    syncRowMedia(item, media);
     const actions = document.createElement("div");
     actions.className = "failure-row-actions";
-    actions.append(createCopyButton(media));
+    actions.append(createCopyButton(item));
     const body = document.createElement("div");
     body.className = "failure-row-body";
-    const title = document.createElement(useCard ? "strong" : "span");
-    title.className = useCard ? "" : "failure-row-title";
-    title.textContent = `${media.artist} — ${media.title}`;
-    const detail = media.detail || media.phase_label || "";
     if (useCard) {
+      const title = document.createElement("strong");
+      title.textContent = failureHeadline(media);
       const meta = document.createElement("div");
       meta.className = "meta";
-      meta.textContent = media.detail
-        ? `${media.phase_label} — ${media.detail}`
-        : media.phase_label || "";
+      meta.textContent = failureMeta(media);
       body.append(title, meta);
     } else {
       const line = document.createElement("span");
-      line.textContent = detail
-        ? `${media.artist} — ${media.title}: ${detail}`
-        : `${media.artist} — ${media.title}`;
+      line.textContent = failureLine(media);
       body.append(line);
     }
-    if (onYoutubeOverride) {
-      const panel = createOverridePanel(media, onYoutubeOverride);
-      actions.append(createOverrideButton(media, onYoutubeOverride, panel));
+    if (onYoutubeOverride && media.track_id) {
+      const panel = createOverridePanel(media.track_id, onYoutubeOverride);
+      actions.append(createOverrideButton(panel));
       body.append(panel);
     }
-    const candidates = createCandidateList(media, onYoutubeOverride);
+    const candidates = createCandidateList(
+      media.track_id,
+      media.candidates,
+      onYoutubeOverride
+    );
     if (candidates) {
       body.append(candidates);
     }
     item.append(actions, body);
-    container.appendChild(item);
+    return item;
+  }
+
+  function paintFailureList(container, medias, options) {
+    const useCard = Boolean(options && options.card);
+    const onYoutubeOverride = options && options.onYoutubeOverride;
+    const emptyText = (options && options.emptyText) || "No failures yet.";
+    const limit = options && options.limit != null ? options.limit : medias.length;
+    const items = Array.isArray(medias) ? medias.slice(0, limit) : [];
+    if (items.length === 0) {
+      container.innerHTML = "";
+      const empty = document.createElement(useCard ? "div" : "li");
+      empty.className = "hint";
+      empty.textContent = emptyText;
+      container.appendChild(empty);
+      return;
+    }
+    const seen = new Set();
+    const existing = new Map();
+    Array.from(container.querySelectorAll(".failure-row[data-track-id]")).forEach(
+      (row) => {
+        existing.set(row.dataset.trackId, row);
+      }
+    );
+    container.querySelectorAll(".hint").forEach((node) => node.remove());
+    items.forEach((media) => {
+      if (!media.track_id) {
+        return;
+      }
+      seen.add(media.track_id);
+      const row = existing.get(media.track_id);
+      if (row) {
+        updateFailureLabels(row, media, useCard);
+        replaceCandidates(row, media, onYoutubeOverride);
+        container.appendChild(row);
+        return;
+      }
+      container.appendChild(buildFailureItem(media, options));
+    });
+    existing.forEach((row, trackId) => {
+      if (!seen.has(trackId)) {
+        row.remove();
+      }
+    });
   }
 
   window.YtpdFailureCopy = {
-    appendFailureItem,
-    artistTitleText,
+    paintFailureList,
   };
 })();

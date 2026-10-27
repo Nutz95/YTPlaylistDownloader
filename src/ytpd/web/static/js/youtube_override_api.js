@@ -1,5 +1,8 @@
 (() => {
-  async function applyYoutubeOverride(jobId, trackId, youtubeUrl) {
+  async function applyAndAnnounce(jobId, trackId, youtubeUrl, onStatus) {
+    if (typeof onStatus === "function") {
+      onStatus("Applying YouTube override…");
+    }
     const response = await fetch(
       `/api/jobs/${jobId}/tracks/${encodeURIComponent(trackId)}/youtube-override`,
       {
@@ -9,10 +12,27 @@
       }
     );
     const body = await response.json();
-    return { ok: response.ok, body };
+    const result = { ok: response.ok, body };
+    if (!result.ok) {
+      if (typeof onStatus === "function") {
+        onStatus(result.body.error || "YouTube override failed.");
+      }
+      return result;
+    }
+    const shortId =
+      window.YtpdJobSelection && window.YtpdJobSelection.shortId
+        ? window.YtpdJobSelection.shortId(result.body.job_id)
+        : result.body.job_id.slice(0, 8);
+    if (typeof onStatus === "function") {
+      onStatus(`Override applied — ${shortId} · pipeline restarted`);
+    }
+    window.dispatchEvent(
+      new CustomEvent("ytpd-pipeline-started", { detail: { jobId: result.body.job_id } })
+    );
+    return result;
   }
 
   window.YtpdYoutubeOverrideApi = {
-    applyYoutubeOverride,
+    applyAndAnnounce,
   };
 })();

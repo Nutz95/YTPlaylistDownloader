@@ -7,6 +7,8 @@
   const mediaList = document.getElementById("progress-media-list");
   const failList = document.getElementById("progress-fail-list");
   const selection = window.YtpdJobSelection;
+  const overrideApi = window.YtpdYoutubeOverrideApi;
+  const failureCopy = window.YtpdFailureCopy;
   if (
     !jobSelect ||
     !watchButton ||
@@ -15,7 +17,9 @@
     !fill ||
     !mediaList ||
     !failList ||
-    !selection
+    !selection ||
+    !overrideApi ||
+    !failureCopy
   ) {
     return;
   }
@@ -24,26 +28,21 @@
 
   async function overrideFailedTrackYoutube(trackId, youtubeUrl) {
     const jobId = jobSelect.value.trim() || selection.getSelectedJobId();
-    const overrideApi = window.YtpdYoutubeOverrideApi;
     if (!jobId) {
       label.textContent = "Select a saved job first.";
       return;
     }
-    if (!overrideApi) {
-      label.textContent = "YouTube override API unavailable.";
-      return;
-    }
-    label.textContent = "Applying YouTube override…";
-    const result = await overrideApi.applyYoutubeOverride(jobId, trackId, youtubeUrl);
-    if (!result.ok) {
-      label.textContent = result.body.error || "YouTube override failed.";
-      return;
-    }
-    label.textContent = `Override applied · pipeline restarted for ${selection.shortId(result.body.job_id)}`;
-    window.dispatchEvent(
-      new CustomEvent("ytpd-pipeline-started", { detail: { jobId: result.body.job_id } })
+    const result = await overrideApi.applyAndAnnounce(
+      jobId,
+      trackId,
+      youtubeUrl,
+      (message) => {
+        label.textContent = message;
+      }
     );
-    pollOnce();
+    if (result.ok) {
+      pollOnce();
+    }
   }
 
   function fillSelect(jobs) {
@@ -63,7 +62,7 @@
     jobSelect.value = selectedId || "";
   }
 
-  function appendCards(container, items, emptyText, failed) {
+  function appendActiveCards(container, items, emptyText) {
     container.innerHTML = "";
     if (!items || items.length === 0) {
       const empty = document.createElement("div");
@@ -72,19 +71,9 @@
       container.appendChild(empty);
       return;
     }
-    const failureCopy = window.YtpdFailureCopy;
     items.forEach((media) => {
-      if (failed && failureCopy) {
-        failureCopy.appendFailureItem(container, media, {
-          card: true,
-          onYoutubeOverride: overrideFailedTrackYoutube,
-        });
-        return;
-      }
       const card = document.createElement("div");
-      card.className = failed
-        ? "progress-media-card is-failed"
-        : "progress-media-card";
+      card.className = "progress-media-card";
       const title = document.createElement("strong");
       title.textContent = `${media.artist} — ${media.title}`;
       const meta = document.createElement("div");
@@ -105,18 +94,16 @@
         : `Stage: ${stage} · ${snapshot.stage_done}/${snapshot.stage_total}`;
     label.textContent = snapshot.label;
     fill.style.width = `${snapshot.percent}%`;
-    appendCards(
+    appendActiveCards(
       mediaList,
       snapshot.active_media,
-      stage === "idle" ? "No active media." : "Waiting for the next track checkpoint…",
-      false
+      stage === "idle" ? "No active media." : "Waiting for the next track checkpoint…"
     );
-    appendCards(
-      failList,
-      snapshot.failed_media,
-      "No failures yet.",
-      true
-    );
+    failureCopy.paintFailureList(failList, snapshot.failed_media || [], {
+      card: true,
+      emptyText: "No failures yet.",
+      onYoutubeOverride: overrideFailedTrackYoutube,
+    });
   }
 
   async function pollOnce() {

@@ -5,7 +5,15 @@
   const status = document.getElementById("job-status");
   const selection = window.YtpdJobSelection;
   const overrideApi = window.YtpdYoutubeOverrideApi;
-  if (!liveLabel || !liveList || !failList || !selection || !overrideApi) {
+  const failureCopy = window.YtpdFailureCopy;
+  if (
+    !liveLabel ||
+    !liveList ||
+    !failList ||
+    !selection ||
+    !overrideApi ||
+    !failureCopy
+  ) {
     return;
   }
 
@@ -19,22 +27,19 @@
       }
       return;
     }
-    if (status) {
-      status.textContent = "Applying YouTube override…";
-    }
-    const result = await overrideApi.applyYoutubeOverride(jobId, trackId, youtubeUrl);
-    if (!result.ok) {
-      if (status) {
-        status.textContent = result.body.error || "YouTube override failed.";
+    const result = await overrideApi.applyAndAnnounce(
+      jobId,
+      trackId,
+      youtubeUrl,
+      (message) => {
+        if (status) {
+          status.textContent = message;
+        }
       }
+    );
+    if (!result.ok) {
       return;
     }
-    if (status) {
-      status.textContent = `Override applied — ${selection.shortId(result.body.job_id)} · pipeline restarted`;
-    }
-    window.dispatchEvent(
-      new CustomEvent("ytpd-pipeline-started", { detail: { jobId: result.body.job_id } })
-    );
     window.dispatchEvent(
       new CustomEvent("ytpd-job-selected", { detail: { jobId: result.body.job_id } })
     );
@@ -44,7 +49,6 @@
   function paintLive(snapshot) {
     liveLabel.textContent = snapshot.label || "No active work.";
     liveList.innerHTML = "";
-    failList.innerHTML = "";
     (snapshot.active_media || []).forEach((media) => {
       const item = document.createElement("li");
       item.className = "is-active";
@@ -58,26 +62,12 @@
       empty.textContent = "No track in flight right now.";
       liveList.appendChild(empty);
     }
-    const failureCopy = window.YtpdFailureCopy;
-    (snapshot.failed_media || []).slice(0, 12).forEach((media) => {
-      if (failureCopy) {
-        failureCopy.appendFailureItem(failList, media, {
-          card: false,
-          onYoutubeOverride: overrideFailedTrackYoutube,
-        });
-        return;
-      }
-      const item = document.createElement("li");
-      item.className = "is-failed";
-      item.textContent = `${media.artist} — ${media.title}: ${media.detail || media.phase_label}`;
-      failList.appendChild(item);
+    failureCopy.paintFailureList(failList, snapshot.failed_media || [], {
+      card: false,
+      limit: 12,
+      emptyText: "No failures yet.",
+      onYoutubeOverride: overrideFailedTrackYoutube,
     });
-    if ((snapshot.failed_media || []).length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "hint";
-      empty.textContent = "No failures yet.";
-      failList.appendChild(empty);
-    }
   }
 
   async function pollLiveOnce() {

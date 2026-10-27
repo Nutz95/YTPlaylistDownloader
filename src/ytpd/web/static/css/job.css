@@ -186,7 +186,7 @@
 }
 
 .failure-copy-btn.is-copied,
-.failure-override-btn.is-applied {
+.failure-override-btn.is-open {
   color: var(--accent);
   border-color: var(--accent);
 }

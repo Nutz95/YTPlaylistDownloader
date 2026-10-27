@@ -15,7 +15,6 @@
   const jobList = document.getElementById("job-list");
   const selection = window.YtpdJobSelection;
   const livePanel = window.YtpdJobLivePanel;
-  const overrideApi = window.YtpdYoutubeOverrideApi;
   if (
     !urlInput ||
     !createButton ||
@@ -32,8 +31,7 @@
     !trackList ||
     !jobList ||
     !selection ||
-    !livePanel ||
-    !overrideApi
+    !livePanel
   ) {
     return;
   }
@@ -137,30 +135,6 @@
       more.textContent = `… +${job.tracks.length - preview.length} more tracks`;
       trackList.appendChild(more);
     }
-  }
-
-  async function overrideFailedTrackYoutube(trackId, youtubeUrl) {
-    const jobId = selection.getSelectedJobId();
-    if (!jobId) {
-      status.textContent = "Select a job first.";
-      return;
-    }
-    statusOverride = "";
-    status.textContent = "Applying YouTube override…";
-    const result = await overrideApi.applyYoutubeOverride(jobId, trackId, youtubeUrl);
-    if (!result.ok) {
-      status.textContent = result.body.error || "YouTube override failed.";
-      return;
-    }
-    statusOverride = `Override applied — ${selection.shortId(result.body.job_id)} · pipeline restarted`;
-    status.textContent = statusOverride;
-    paintSelectedSummary(result.body);
-    paintTracks(result.body);
-    await refreshJobList(false);
-    livePanel.startLiveWatch();
-    window.dispatchEvent(
-      new CustomEvent("ytpd-pipeline-started", { detail: { jobId: result.body.job_id } })
-    );
   }
 
   function paintSelectedSummary(job) {

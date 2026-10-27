@@ -152,7 +152,7 @@
 .progress-fail-list .failure-copy-btn:hover,
 .progress-fail-list .failure-copy-btn.is-copied,
 .progress-fail-list .failure-override-btn:hover,
-.progress-fail-list .failure-override-btn.is-applied {
+.progress-fail-list .failure-override-btn.is-open {
   color: var(--accent);
   border-color: var(--accent);
 }
