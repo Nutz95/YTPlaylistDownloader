@@ -76,6 +76,15 @@ class PythonStructureGuard:
                         )
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 found.extend(self._check_function(path, node))
+            if isinstance(node, ast.AnnAssign) and node.annotation is not None:
+                if self._is_variadic_tuple(node.annotation):
+                    found.append(
+                        GuardViolation(
+                            path=path,
+                            kind="variadic_tuple",
+                            detail="use list[T], not a variadic tuple annotation",
+                        )
+                    )
         return found
 
     def _check_function(

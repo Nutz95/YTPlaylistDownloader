@@ -86,7 +86,7 @@ class JobOrchestrator:
                 tracks.append(track)
         if not changed:
             return job
-        return self._job_store.save(replace(job, tracks=tuple(tracks)))
+        return self._job_store.save(replace(job, tracks=tracks))
 
     def _cancelled(self, job: JobSnapshot) -> OrchestratorResult:
         updated = replace(job, status=JobStatus.CANCELLED)

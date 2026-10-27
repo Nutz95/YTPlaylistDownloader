@@ -10,4 +10,4 @@ class ProgressSnapshot:
 
     job_id: str
     global_progress: GlobalProgress
-    active_media: tuple[MediaProgress, ...]
+    active_media: list[MediaProgress]

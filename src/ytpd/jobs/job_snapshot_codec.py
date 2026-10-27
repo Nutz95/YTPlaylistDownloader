@@ -65,9 +65,7 @@ class JobSnapshotCodec:
 
     def from_payload(self, payload: JobJsonPayload) -> JobSnapshot:
         """Deserialize a JSON payload into a typed snapshot."""
-        tracks = tuple(
-            self._track_from_payload(item) for item in payload["tracks"]
-        )
+        tracks = [self._track_from_payload(item) for item in payload["tracks"]]
         return JobSnapshot(
             job_id=payload["job_id"],
             source_url=payload["source_url"],

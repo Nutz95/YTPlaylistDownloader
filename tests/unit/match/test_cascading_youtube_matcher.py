@@ -48,7 +48,13 @@ def test_cascade_searches_once_then_uses_llm() -> None:
         }
     )
     search = CountingYoutubeSearchClient(inner)
-    transport = FakeLmStudioHttpTransport(["test-model"], ["0"])
+    transport = FakeLmStudioHttpTransport(
+        ["test-model"],
+        [
+            '{"candidate_index": 0, "reason": "best"}',
+            '{"candidate_index": 0, "reason": "confirmed"}',
+        ],
+    )
     gate = FakeResourceGate()
     matcher = CascadingYoutubeMatcher(
         YoutubeCandidateFetcher(search, StaticMatchScorer()),
@@ -58,7 +64,7 @@ def test_cascade_searches_once_then_uses_llm() -> None:
     )
     result = matcher.match(_weak_hit_track())
     assert search.search_calls == 1
-    assert transport.chat_calls == 1
+    assert transport.chat_calls == 2
     assert gate.llm_acquire_count == 1
     assert result.matched is True
     assert result.candidate is not None

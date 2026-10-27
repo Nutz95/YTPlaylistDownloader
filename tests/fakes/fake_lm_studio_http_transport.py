@@ -12,7 +12,7 @@ class FakeLmStudioHttpTransport:
         chat_replies: list[str],
         offline: bool = False,
     ) -> None:
-        self._model_ids = tuple(model_ids)
+        self._model_ids = list(model_ids)
         self._chat_replies = list(chat_replies)
         self._offline = offline
         self.chat_calls = 0

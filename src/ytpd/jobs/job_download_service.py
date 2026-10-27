@@ -44,10 +44,10 @@ class JobDownloadService:
             return self._job_store.save(healed)
         results = self._download_pool.run(healed, pending)
         by_id = {item.track_id: item for item in results}
-        updated_tracks = tuple(
+        updated_tracks = [
             self._apply_result(healed, track, by_id.get(track.track_id))
             for track in healed.tracks
-        )
+        ]
         return self._job_store.save(
             replace(healed, status=JobStatus.RUNNING, tracks=updated_tracks)
         )
@@ -69,7 +69,7 @@ class JobDownloadService:
                 tracks.append(track)
         if not changed:
             return job
-        return replace(job, tracks=tuple(tracks))
+        return replace(job, tracks=tracks)
 
     def _pending_tracks(self, job: JobSnapshot) -> list[TrackRef]:
         pending: list[TrackRef] = []

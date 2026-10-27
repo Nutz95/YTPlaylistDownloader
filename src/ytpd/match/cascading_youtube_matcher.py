@@ -8,7 +8,7 @@ from ytpd.resolve.ytdlp_probe_error import YtdlpProbeError
 
 
 class CascadingYoutubeMatcher:
-    """Search once, try static decide, then LM Studio choose on the same candidates."""
+    """Search once, try static decide, then LM choose + verify on the same candidates."""
 
     def __init__(
         self,
@@ -23,7 +23,7 @@ class CascadingYoutubeMatcher:
         self._resource_gate = resource_gate
 
     def match(self, track: TrackRef) -> MatchResult:
-        """Match ``track`` with one search and optional LLM fallback."""
+        """Match ``track`` with one search and optional verified LLM fallback."""
         query = f"{track.artist} {track.title}".strip()
         if query == "":
             return MatchResult(
@@ -49,18 +49,27 @@ class CascadingYoutubeMatcher:
         self._resource_gate.acquire_llm()
         try:
             choice = self._lm_client.choose_match(track, candidates)
+            if choice.candidate_index is None:
+                return MatchResult(
+                    track_id=track.track_id,
+                    matched=False,
+                    candidate=static_result.candidate,
+                    error_message=choice.error_message,
+                )
+            selected = candidates[choice.candidate_index]
+            verified = self._lm_client.verify_match(track, selected)
         finally:
             self._resource_gate.release_llm()
-        if choice.candidate_index is None:
+        if verified.candidate_index is None:
             return MatchResult(
                 track_id=track.track_id,
                 matched=False,
-                candidate=static_result.candidate,
-                error_message=choice.error_message,
+                candidate=selected,
+                error_message=verified.error_message or "LLM: match rejeté",
             )
         return MatchResult(
             track_id=track.track_id,
             matched=True,
-            candidate=candidates[choice.candidate_index],
+            candidate=selected,
             error_message=None,
         )

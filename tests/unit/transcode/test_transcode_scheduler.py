@@ -32,7 +32,7 @@ def _track(track_id: str) -> TrackRef:
 def test_scheduler_prefers_nvidia_when_gpu_free(tmp_path: Path) -> None:
     store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
     job = store.create("https://www.youtube.com/watch?v=a")
-    job = store.save(replace(job, tracks=(_track("a"),)))
+    job = store.save(replace(job, tracks=[_track("a")]))
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
     media = paths.download_media_file(job, job.tracks[0])
     media.parent.mkdir(parents=True, exist_ok=True)
@@ -56,7 +56,7 @@ def test_scheduler_prefers_nvidia_when_gpu_free(tmp_path: Path) -> None:
 def test_scheduler_skips_gpu_while_llm_held(tmp_path: Path) -> None:
     store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
     job = store.create("https://www.youtube.com/watch?v=a")
-    job = store.save(replace(job, tracks=(_track("a"),)))
+    job = store.save(replace(job, tracks=[_track("a")]))
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
     media = paths.download_media_file(job, job.tracks[0])
     media.parent.mkdir(parents=True, exist_ok=True)

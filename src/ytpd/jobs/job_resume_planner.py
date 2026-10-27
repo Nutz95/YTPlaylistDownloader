@@ -23,9 +23,9 @@ class JobResumePlanner:
             return JobResumePlan(
                 job_id=job.job_id,
                 job_action=ResumeAction.RESOLVE_PLAYLIST,
-                decisions=(),
+                decisions=[],
             )
-        decisions = tuple(
+        decisions = [
             TrackResumeDecision(
                 track_id=track.track_id,
                 action=self._state_machine.decide(
@@ -34,7 +34,7 @@ class JobResumePlanner:
                 ),
             )
             for track in job.tracks
-        )
+        ]
         return JobResumePlan(
             job_id=job.job_id,
             job_action=ResumeAction.NONE,

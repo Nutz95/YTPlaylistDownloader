@@ -28,9 +28,9 @@ class JobMatchService:
         if len(results) == 0:
             return job
         by_id = {item.track_id: item for item in results}
-        updated_tracks = tuple(
+        updated_tracks = [
             self._apply_result(track, by_id.get(track.track_id)) for track in job.tracks
-        )
+        ]
         updated = replace(
             job,
             status=JobStatus.RUNNING,

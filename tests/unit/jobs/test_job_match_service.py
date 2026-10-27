@@ -19,7 +19,7 @@ def test_match_job_persists_partial_results_when_one_track_fails(
 ) -> None:
     store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
     job = store.create("https://www.deezer.com/playlist/1")
-    tracks = (
+    tracks = [
         TrackRef(
             track_id="ok",
             title="Ok",
@@ -42,7 +42,7 @@ def test_match_job_persists_partial_results_when_one_track_fails(
             deezer_id="2",
             error_message=None,
         ),
-    )
+    ]
     store.save(replace(job, tracks=tracks))
     matcher = FakeYoutubeMatcher(
         {

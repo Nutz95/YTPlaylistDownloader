@@ -10,7 +10,7 @@ class JobResumePlan:
 
     job_id: str
     job_action: ResumeAction
-    decisions: tuple[TrackResumeDecision, ...]
+    decisions: list[TrackResumeDecision]
 
     def is_actionable(self) -> bool:
         """Return True when resolve or any track still needs pipeline work."""

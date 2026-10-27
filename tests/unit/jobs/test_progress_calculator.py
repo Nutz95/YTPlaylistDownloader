@@ -12,7 +12,7 @@ def test_global_percent_and_active_media_filter() -> None:
         source_url="https://example.test/list",
         source_kind=SourceKind.YOUTUBE_PLAYLIST,
         status=JobStatus.RUNNING,
-        tracks=(
+        tracks=[
             TrackRef(
                 track_id="1",
                 title="Done",
@@ -35,7 +35,7 @@ def test_global_percent_and_active_media_filter() -> None:
                 deezer_id=None,
                 error_message=None,
             ),
-        ),
+        ],
         error_message=None,
     )
     snapshot = ProgressCalculator().from_job(job)

@@ -15,7 +15,7 @@ def test_save_load_preserves_tracks(tmp_path: Path) -> None:
         source_url="https://youtu.be/abc",
         source_kind=SourceKind.YOUTUBE_VIDEO,
         status=JobStatus.QUEUED,
-        tracks=(
+        tracks=[
             TrackRef(
                 track_id="t1",
                 title="Song",
@@ -27,7 +27,7 @@ def test_save_load_preserves_tracks(tmp_path: Path) -> None:
                 deezer_id=None,
                 error_message=None,
             ),
-        ),
+        ],
         error_message=None,
     )
     store.save(snapshot)

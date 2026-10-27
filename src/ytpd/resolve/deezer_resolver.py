@@ -17,7 +17,7 @@ class DeezerResolver:
         entries = self._client.fetch_playlist_tracks(url)
         if len(entries) == 0:
             raise DeezerApiError("deezer resolve returned no tracks")
-        tracks = tuple(
+        tracks = [
             TrackRef(
                 track_id=f"deezer-{entry.deezer_id}",
                 title=entry.title,
@@ -30,5 +30,5 @@ class DeezerResolver:
                 error_message=None,
             )
             for entry in entries
-        )
+        ]
         return PlaylistResolveResult(source_kind=source_kind, tracks=tracks)

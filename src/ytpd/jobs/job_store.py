@@ -23,7 +23,7 @@ class JobStore:
             source_url=cleaned,
             source_kind=SourceKind.UNKNOWN,
             status=JobStatus.QUEUED,
-            tracks=(),
+            tracks=[],
             error_message=None,
         )
         self._checkpoint_store.save(snapshot)

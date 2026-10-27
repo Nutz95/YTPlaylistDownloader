@@ -29,7 +29,7 @@ def test_empty_tracks_plan_resolves_playlist(tmp_path: Path) -> None:
     job = store.create("https://example.test/list")
     plan = _planner({}).plan(job)
     assert plan.job_action is ResumeAction.RESOLVE_PLAYLIST
-    assert plan.decisions == ()
+    assert plan.decisions == []
     assert plan.is_actionable() is True
 
 

@@ -2,13 +2,14 @@ from ytpd.domain.lm_studio_match_choice import LmStudioMatchChoice
 from ytpd.domain.match_candidate import MatchCandidate
 from ytpd.domain.track_ref import TrackRef
 from ytpd.lmstudio.lm_studio_error import LmStudioError
+from ytpd.lmstudio.lm_studio_match_json_parser import LmStudioMatchJsonParser
 from ytpd.lmstudio.lm_studio_settings import LmStudioSettings
 from ytpd.ports.lm_studio_http_transport import LmStudioHttpTransport
 
 _SYSTEM_PROMPT = (
-    "Tu choisis le meilleur candidat YouTube pour un titre Deezer. "
-    "Réponds uniquement avec l'index entier du candidat (0-based), "
-    "ou NONE si aucun n'est correct."
+    "Tu es un matcheur YouTube. Réponds UNIQUEMENT avec un objet JSON "
+    'strict du modèle {"candidate_index": <int|null>, "reason": "<texte>"}. '
+    "candidate_index est l'index 0-based du meilleur candidat, ou null si aucun."
 )
 
 
@@ -23,6 +24,7 @@ class HttpLmStudioClient:
         self._transport = transport
         self._settings = settings
         self._model_ready = False
+        self._parser = LmStudioMatchJsonParser()
 
     def choose_match(
         self,
@@ -42,12 +44,41 @@ class HttpLmStudioClient:
                 _SYSTEM_PROMPT,
                 self._user_prompt(track, candidates),
             )
+            return self._parser.parse(response.content, len(candidates))
         except LmStudioError as error:
             return LmStudioMatchChoice(
                 candidate_index=None,
                 error_message=str(error),
             )
-        return self._parse_choice(response.content, len(candidates))
+
+    def verify_match(
+        self,
+        track: TrackRef,
+        candidate: MatchCandidate,
+    ) -> LmStudioMatchChoice:
+        """Ask a second LLM pass to confirm or reject one chosen candidate."""
+        try:
+            self._ensure_model_ready()
+            response = self._transport.post_chat(
+                self._settings.model,
+                (
+                    "Tu vérifies un match YouTube. Réponds UNIQUEMENT JSON "
+                    '{"candidate_index": 0|null, "reason": "..."}. '
+                    "0 = validé, null = rejeté."
+                ),
+                (
+                    f"Titre: {track.title}\nArtiste: {track.artist}\n"
+                    f"Durée: {track.duration_sec}\n"
+                    f"Candidat: {candidate.title} | {candidate.channel} | "
+                    f"{candidate.duration_sec}s | {candidate.youtube_url}"
+                ),
+            )
+            return self._parser.parse(response.content, 1)
+        except LmStudioError as error:
+            return LmStudioMatchChoice(
+                candidate_index=None,
+                error_message=str(error),
+            )
 
     def _ensure_model_ready(self) -> None:
         if self._model_ready:
@@ -76,24 +107,3 @@ class HttpLmStudioClient:
                 f"{candidate.duration_sec}s | {candidate.youtube_url}"
             )
         return "\n".join(lines)
-
-    def _parse_choice(self, content: str, count: int) -> LmStudioMatchChoice:
-        token = content.strip().split()[0].upper()
-        if token == "NONE":
-            return LmStudioMatchChoice(
-                candidate_index=None,
-                error_message="LLM: aucun candidat retenu",
-            )
-        try:
-            index = int(token)
-        except ValueError:
-            return LmStudioMatchChoice(
-                candidate_index=None,
-                error_message="réponse LLM illisible",
-            )
-        if index < 0 or index >= count:
-            return LmStudioMatchChoice(
-                candidate_index=None,
-                error_message="index LLM hors bornes",
-            )
-        return LmStudioMatchChoice(candidate_index=index, error_message=None)

@@ -7,5 +7,5 @@ from ytpd.domain.deezer_track_entry import DeezerTrackEntry
 class DeezerTracksPage:
     """One page of Deezer playlist tracks plus an optional next URL."""
 
-    tracks: tuple[DeezerTrackEntry, ...]
+    tracks: list[DeezerTrackEntry]
     next_url: str | None

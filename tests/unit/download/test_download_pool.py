@@ -14,7 +14,7 @@ from tests.fakes.fake_media_downloader import FakeMediaDownloader
 def test_download_pool_runs_pending_tracks(tmp_path: Path) -> None:
     store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
     job = store.create("https://www.youtube.com/playlist?list=x")
-    tracks = (
+    tracks = [
         TrackRef(
             track_id="a",
             title="A",
@@ -37,7 +37,7 @@ def test_download_pool_runs_pending_tracks(tmp_path: Path) -> None:
             deezer_id=None,
             error_message=None,
         ),
-    )
+    ]
     job = store.save(replace(job, tracks=tracks))
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
     downloader = FakeMediaDownloader(paths, {"a", "b"})

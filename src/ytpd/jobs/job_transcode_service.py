@@ -38,9 +38,9 @@ class JobTranscodeService:
             return job
         results = self._scheduler.run(job, pending)
         by_id = {item.track_id: item for item in results}
-        updated_tracks = tuple(
+        updated_tracks = [
             self._apply_result(track, by_id.get(track.track_id)) for track in job.tracks
-        )
+        ]
         return self._job_store.save(
             replace(job, status=JobStatus.RUNNING, tracks=updated_tracks)
         )

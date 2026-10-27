@@ -13,7 +13,7 @@ class JobSnapshot:
     source_url: str
     source_kind: SourceKind
     status: JobStatus
-    tracks: tuple[TrackRef, ...]
+    tracks: list[TrackRef]
     error_message: str | None
 
     def with_status(self, status: JobStatus) -> "JobSnapshot":

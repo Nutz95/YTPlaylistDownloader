@@ -25,11 +25,11 @@ class ProgressCalculator:
                 total_tracks=total,
                 label=job.status.value,
             ),
-            active_media=tuple(
+            active_media=[
                 self._active_media(track)
                 for track in job.tracks
                 if track.phase in _ACTIVE_PHASES
-            ),
+            ],
         )
 
     def _active_media(self, track: TrackRef) -> MediaProgress:

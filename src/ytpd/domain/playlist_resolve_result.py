@@ -6,7 +6,7 @@ from ytpd.domain.track_ref import TrackRef
 
 @dataclass(frozen=True)
 class PlaylistResolveResult:
-    """Resolved playlist or single-video metadata ready for checkpointing."""
+    """Typed result of resolving a playlist URL into tracks."""
 
     source_kind: SourceKind
-    tracks: tuple[TrackRef, ...]
+    tracks: list[TrackRef]

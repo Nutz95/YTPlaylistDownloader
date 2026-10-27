@@ -5,4 +5,4 @@ from dataclasses import dataclass
 class LmStudioModelsResponse:
     """Model ids reported by LM Studio ``/models``."""
 
-    model_ids: tuple[str, ...]
+    model_ids: list[str]

@@ -1,8 +1,9 @@
 import json
-from collections.abc import Mapping
 
 from ytpd.domain.deezer_track_entry import DeezerTrackEntry
 from ytpd.resolve.deezer_api_error import DeezerApiError
+from ytpd.resolve.deezer_artist_json import DeezerArtistJson
+from ytpd.resolve.deezer_track_json import DeezerTrackJson
 from ytpd.resolve.deezer_tracks_page import DeezerTracksPage
 
 
@@ -24,43 +25,48 @@ class DeezerTracksJsonParser:
         for index, item in enumerate(data_raw):
             if not isinstance(item, dict):
                 raise DeezerApiError(f"deezer track {index} must be an object")
-            tracks.append(self._parse_track(item, index))
+            tracks.append(self._parse_track(self._as_track_json(item, index), index))
         next_raw = loaded.get("next")
         next_url = next_raw if isinstance(next_raw, str) and next_raw.strip() != "" else None
-        return DeezerTracksPage(tracks=tuple(tracks), next_url=next_url)
+        return DeezerTracksPage(tracks=tracks, next_url=next_url)
 
-    def _parse_track(
+    def _as_track_json(
         self,
-        item: Mapping[str, str | int | float | bool | None | Mapping[str, str]],
+        item: dict[str, str | int | float | bool | None | DeezerArtistJson],
         index: int,
-    ) -> DeezerTrackEntry:
+    ) -> DeezerTrackJson:
         track_id = item.get("id")
         title = item.get("title")
         if isinstance(track_id, bool) or not isinstance(track_id, int | str):
             raise DeezerApiError(f"deezer track {index} missing id")
         if not isinstance(title, str) or title.strip() == "":
             raise DeezerApiError(f"deezer track {index} missing title")
-        artist = self._artist_name(item.get("artist"))
+        payload: DeezerTrackJson = {"id": track_id, "title": title}
+        artist_raw = item.get("artist")
+        if isinstance(artist_raw, dict):
+            name = artist_raw.get("name")
+            if isinstance(name, str):
+                artist: DeezerArtistJson = {"name": name}
+                payload["artist"] = artist
         duration_raw = item.get("duration")
-        duration_sec: int | None
-        if duration_raw is None:
-            duration_sec = None
-        elif isinstance(duration_raw, bool) or not isinstance(duration_raw, int | float):
+        if isinstance(duration_raw, bool):
             raise DeezerApiError(f"deezer track {index} duration must be numeric")
-        else:
-            duration_sec = int(duration_raw)
+        if isinstance(duration_raw, int | float):
+            payload["duration"] = duration_raw
+        elif duration_raw is not None:
+            raise DeezerApiError(f"deezer track {index} duration must be numeric")
+        return payload
+
+    def _parse_track(self, item: DeezerTrackJson, index: int) -> DeezerTrackEntry:
+        artist = ""
+        if "artist" in item:
+            artist = item["artist"].get("name", "")
+        duration_sec: int | None = None
+        if "duration" in item:
+            duration_sec = int(item["duration"])
         return DeezerTrackEntry(
-            deezer_id=str(track_id),
-            title=title,
+            deezer_id=str(item["id"]),
+            title=item["title"],
             artist=artist,
             duration_sec=duration_sec,
         )
-
-    def _artist_name(
-        self,
-        artist_raw: str | int | float | bool | None | Mapping[str, str],
-    ) -> str:
-        if not isinstance(artist_raw, Mapping):
-            return ""
-        name = artist_raw.get("name")
-        return name if isinstance(name, str) else ""

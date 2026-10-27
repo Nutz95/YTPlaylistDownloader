@@ -39,7 +39,7 @@ class HttpxLmStudioHttpTransport:
                 model_id = item.get("id")
                 if isinstance(model_id, str):
                     ids.append(model_id)
-        return LmStudioModelsResponse(model_ids=tuple(ids))
+        return LmStudioModelsResponse(model_ids=ids)
 
     def post_chat(
         self,

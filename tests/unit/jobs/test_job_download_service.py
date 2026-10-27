@@ -17,7 +17,7 @@ from tests.fakes.fake_media_downloader import FakeMediaDownloader
 def test_download_job_persists_success_and_failure(tmp_path: Path) -> None:
     store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
     job = store.create("https://www.youtube.com/playlist?list=x")
-    tracks = (
+    tracks = [
         TrackRef(
             track_id="ok",
             title="Ok",
@@ -40,7 +40,7 @@ def test_download_job_persists_success_and_failure(tmp_path: Path) -> None:
             deezer_id=None,
             error_message=None,
         ),
-    )
+    ]
     job = store.save(replace(job, tracks=tracks))
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
     service = JobDownloadService(

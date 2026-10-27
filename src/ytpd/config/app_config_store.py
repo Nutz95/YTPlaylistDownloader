@@ -1,16 +1,14 @@
-from collections.abc import Mapping
 from importlib import resources
 from pathlib import Path
 
 import yaml
 
 from ytpd.config.app_config import AppConfig
+from ytpd.config.app_config_document import AppConfigDocument
+from ytpd.config.app_config_document_parser import AppConfigDocumentParser
+from ytpd.config.app_config_yaml_loader import AppConfigYamlLoader
 from ytpd.config.invalid_app_config_error import InvalidAppConfigError
 from ytpd.config.path_validator import PathValidator
-
-_DEFAULT_LM_BASE_URL = "http://127.0.0.1:1234/v1"
-_DEFAULT_LM_MODEL = "qwen3.8-27b-gsq-rco"
-_DEFAULT_LM_TIMEOUT_SEC = 60.0
 
 
 class AppConfigStore:
@@ -19,6 +17,8 @@ class AppConfigStore:
     def __init__(self, writable_path: Path, path_validator: PathValidator) -> None:
         self._writable_path = writable_path
         self._path_validator = path_validator
+        self._yaml_loader = AppConfigYamlLoader()
+        self._document_parser = AppConfigDocumentParser()
 
     def load(self) -> AppConfig:
         """Load writable config when present, otherwise seed from the package default."""
@@ -42,16 +42,8 @@ class AppConfigStore:
             lm_timeout_sec=config.lm_timeout_sec,
         )
         self._writable_path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {
-            "bind_host": normalized.host,
-            "bind_port": normalized.port,
-            "work_dir": normalized.work_dir.as_posix(),
-            "dest_dir": normalized.dest_dir.as_posix(),
-            "lm_base_url": normalized.lm_base_url,
-            "lm_model": normalized.lm_model,
-            "lm_timeout_sec": normalized.lm_timeout_sec,
-        }
-        text = yaml.safe_dump(payload, sort_keys=False)
+        document = self.to_document(normalized)
+        text = yaml.safe_dump(dict(document), sort_keys=False)
         temporary_path = self._writable_path.with_suffix(".yaml.tmp")
         temporary_path.write_text(text, encoding="utf-8")
         temporary_path.replace(self._writable_path)
@@ -59,61 +51,24 @@ class AppConfigStore:
 
     def load_text(self, text: str) -> AppConfig:
         """Parse YAML text into a validated ``AppConfig``."""
+        defaults = self._yaml_loader.load_text(self._read_packaged_default())
         loaded = yaml.safe_load(text)
-        if not isinstance(loaded, Mapping):
+        if not isinstance(loaded, dict):
             raise InvalidAppConfigError("Config root must be a mapping")
-        raw_host = loaded.get("bind_host")
-        if not isinstance(raw_host, str) or raw_host.strip() == "":
-            raise InvalidAppConfigError("bind_host must be a non-empty string")
-        raw_port = loaded.get("bind_port")
-        if isinstance(raw_port, bool) or not isinstance(raw_port, int):
-            raise InvalidAppConfigError("bind_port must be an integer")
-        if raw_port < 1 or raw_port > 65535:
-            raise InvalidAppConfigError("bind_port must be between 1 and 65535")
-        raw_work = loaded.get("work_dir")
-        if not isinstance(raw_work, str) or raw_work.strip() == "":
-            raise InvalidAppConfigError("work_dir must be a non-empty string")
-        raw_dest = loaded.get("dest_dir")
-        if not isinstance(raw_dest, str) or raw_dest.strip() == "":
-            raise InvalidAppConfigError("dest_dir must be a non-empty string")
-        return AppConfig(
-            host=raw_host.strip(),
-            port=raw_port,
-            work_dir=Path(raw_work.strip()),
-            dest_dir=Path(raw_dest.strip()),
-            lm_base_url=self._optional_str(
-                loaded, "lm_base_url", _DEFAULT_LM_BASE_URL
-            ),
-            lm_model=self._optional_str(loaded, "lm_model", _DEFAULT_LM_MODEL),
-            lm_timeout_sec=self._optional_float(
-                loaded, "lm_timeout_sec", _DEFAULT_LM_TIMEOUT_SEC
-            ),
-        )
+        document = self._yaml_loader.merge_with_defaults(loaded, defaults)
+        return self._document_parser.parse(document)
 
-    def _optional_str(
-        self,
-        loaded: Mapping[str, str | int | float],
-        key: str,
-        default: str,
-    ) -> str:
-        raw = loaded.get(key, default)
-        if not isinstance(raw, str) or raw.strip() == "":
-            raise InvalidAppConfigError(f"{key} must be a non-empty string")
-        return raw.strip()
-
-    def _optional_float(
-        self,
-        loaded: Mapping[str, str | int | float],
-        key: str,
-        default: float,
-    ) -> float:
-        raw = loaded.get(key, default)
-        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
-            raise InvalidAppConfigError(f"{key} must be a number")
-        value = float(raw)
-        if value <= 0:
-            raise InvalidAppConfigError(f"{key} must be positive")
-        return value
+    def to_document(self, config: AppConfig) -> AppConfigDocument:
+        """Serialize runtime settings into a structured config document."""
+        return {
+            "bind_host": config.host,
+            "bind_port": config.port,
+            "work_dir": config.work_dir.as_posix(),
+            "dest_dir": config.dest_dir.as_posix(),
+            "lm_base_url": config.lm_base_url,
+            "lm_model": config.lm_model,
+            "lm_timeout_sec": config.lm_timeout_sec,
+        }
 
     def _read_packaged_default(self) -> str:
         config_root = resources.files("ytpd.config")

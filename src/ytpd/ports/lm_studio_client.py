@@ -6,7 +6,7 @@ from ytpd.domain.track_ref import TrackRef
 
 
 class LmStudioClient(Protocol):
-    """Ask LM Studio to pick the best YouTube candidate for a track."""
+    """Ask LM Studio to pick and verify YouTube candidates."""
 
     def choose_match(
         self,
@@ -14,3 +14,10 @@ class LmStudioClient(Protocol):
         candidates: list[MatchCandidate],
     ) -> LmStudioMatchChoice:
         """Return the chosen candidate index, or a failure choice."""
+
+    def verify_match(
+        self,
+        track: TrackRef,
+        candidate: MatchCandidate,
+    ) -> LmStudioMatchChoice:
+        """Confirm or reject one selected candidate before download."""
