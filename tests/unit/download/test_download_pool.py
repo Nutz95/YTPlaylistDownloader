@@ -5,6 +5,7 @@ from ytpd.domain.source_kind import SourceKind
 from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
 from ytpd.download.download_pool import DownloadPool
+from ytpd.jobs.job_cancel_flag import JobCancelFlag
 from ytpd.jobs.job_store import JobStore
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
 from ytpd.jobs.track_artifact_paths import TrackArtifactPaths
@@ -41,7 +42,9 @@ def test_download_pool_runs_pending_tracks(tmp_path: Path) -> None:
     job = store.save(replace(job, tracks=tracks))
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
     downloader = FakeMediaDownloader(paths, {"a", "b"})
-    results = DownloadPool(downloader, max_workers=2).run(job, list(tracks))
+    results = DownloadPool(
+        downloader, max_workers=2, cancel_flag=JobCancelFlag()
+    ).run(job, list(tracks))
     assert [item.track_id for item in results] == ["a", "b"]
     assert all(item.success for item in results)
     assert set(downloader.calls) == {"a", "b"}
