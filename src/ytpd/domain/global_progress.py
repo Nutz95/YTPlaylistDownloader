@@ -9,3 +9,6 @@ class GlobalProgress:
     completed_tracks: int
     total_tracks: int
     label: str
+    stage: str
+    stage_done: int
+    stage_total: int

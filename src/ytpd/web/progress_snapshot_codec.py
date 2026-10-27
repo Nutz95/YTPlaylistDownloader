@@ -18,8 +18,14 @@ class ProgressSnapshotCodec:
             "completed_tracks": snapshot.global_progress.completed_tracks,
             "total_tracks": snapshot.global_progress.total_tracks,
             "label": snapshot.global_progress.label,
+            "stage": snapshot.global_progress.stage,
+            "stage_done": snapshot.global_progress.stage_done,
+            "stage_total": snapshot.global_progress.stage_total,
             "active_media": [
                 self._media_to_payload(media) for media in snapshot.active_media
+            ],
+            "failed_media": [
+                self._media_to_payload(media) for media in snapshot.failed_media
             ],
         }
 
@@ -27,6 +33,16 @@ class ProgressSnapshotCodec:
         return {
             "track_id": media.track_id,
             "title": media.title,
+            "artist": media.artist,
             "phase_label": cast(TrackPhaseName, media.phase.value),
             "detail": media.detail,
+            "candidates": [
+                {
+                    "youtube_url": candidate.youtube_url,
+                    "title": candidate.title,
+                    "channel": candidate.channel,
+                    "duration_sec": candidate.duration_sec,
+                }
+                for candidate in media.candidates
+            ],
         }

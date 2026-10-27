@@ -6,6 +6,7 @@ class TrackPhase(Enum):
 
     PENDING = "pending"
     RESOLVED = "resolved"
+    MATCHING = "matching"
     MATCHED = "matched"
     MATCH_FAILED = "match_failed"
     DOWNLOADING = "downloading"

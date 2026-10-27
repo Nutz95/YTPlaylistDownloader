@@ -21,6 +21,9 @@ def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.Monk
             lm_base_url="http://127.0.0.1:1234/v1",
             lm_model="test-model",
             lm_timeout_sec=30.0,
+            youtube_cookies_from_browser="brave",
+            youtube_cookies_file="config/youtube_cookies.txt",
+            ffmpeg_path="",
         )
     )
     assert writable.is_file()
@@ -35,6 +38,33 @@ def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.Monk
     assert reloaded.dest_dir == saved.dest_dir
     assert saved.work_dir.as_posix() == "work_data"
     assert saved.dest_dir.as_posix() == "out_data"
+    assert reloaded.youtube_cookies_from_browser == "brave"
+    assert reloaded.youtube_cookies_file == "config/youtube_cookies.txt"
+    assert reloaded.ffmpeg_path == ""
+
+
+def test_cookies_default_from_packaged_yaml_when_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    store = AppConfigStore(tmp_path / "app.yaml", PathValidator())
+    loaded = store.load_text(
+        "\n".join(
+            [
+                'bind_host: "127.0.0.1"',
+                "bind_port: 8765",
+                'work_dir: "_work"',
+                'dest_dir: "_out"',
+                'lm_base_url: "http://127.0.0.1:1234/v1"',
+                'lm_model: "m"',
+                "lm_timeout_sec: 30",
+            ]
+        )
+    )
+    assert loaded.youtube_cookies_from_browser == "brave"
+    assert loaded.youtube_cookies_file == ""
+    assert loaded.ffmpeg_path == ""
 
 
 def test_rejects_empty_host() -> None:

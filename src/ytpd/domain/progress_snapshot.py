@@ -11,3 +11,4 @@ class ProgressSnapshot:
     job_id: str
     global_progress: GlobalProgress
     active_media: list[MediaProgress]
+    failed_media: list[MediaProgress]

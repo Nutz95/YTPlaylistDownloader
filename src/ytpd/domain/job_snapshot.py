@@ -1,6 +1,7 @@
 from dataclasses import dataclass, replace
 
 from ytpd.domain.job_status import JobStatus
+from ytpd.domain.pipeline_stage import PipelineStage
 from ytpd.domain.source_kind import SourceKind
 from ytpd.domain.track_ref import TrackRef
 
@@ -15,6 +16,7 @@ class JobSnapshot:
     status: JobStatus
     tracks: list[TrackRef]
     error_message: str | None
+    pipeline_stage: PipelineStage | None = None
 
     def with_status(self, status: JobStatus) -> "JobSnapshot":
         """Return a copy of this snapshot with a different lifecycle status."""

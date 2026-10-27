@@ -11,4 +11,8 @@ class ProgressSnapshotJsonPayload(TypedDict):
     completed_tracks: int
     total_tracks: int
     label: str
+    stage: str
+    stage_done: int
+    stage_total: int
     active_media: list[MediaProgressJsonPayload]
+    failed_media: list[MediaProgressJsonPayload]

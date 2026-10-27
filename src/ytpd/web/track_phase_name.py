@@ -3,6 +3,7 @@ from typing import Literal
 TrackPhaseName = Literal[
     "pending",
     "resolved",
+    "matching",
     "matched",
     "match_failed",
     "downloading",

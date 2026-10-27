@@ -1,5 +1,5 @@
 <h2>Progression</h2>
-<p>Suivi global et barres par média actif pour le job sélectionné.</p>
+<p>Suivi live par étape. Download = flux <strong>audio</strong> (bestaudio, souvent quelques Mo — rapide). Transcode MP3 = <strong>CPU</strong> (libmp3lame ; pas de GPU NVENC pour le MP3).</p>
 <label class="field">
   <span>Active job</span>
   <select id="progress-job-select">
@@ -7,10 +7,14 @@
   </select>
 </label>
 <button type="button" id="progress-watch">Watch</button>
+<p class="hint" id="progress-stage-line">No active stage.</p>
 <div class="progress-global">
   <div class="progress-label" id="progress-global-label">No active job.</div>
   <div class="progress-track" aria-hidden="true">
     <div class="progress-fill" id="progress-global-fill" style="width: 0%"></div>
   </div>
 </div>
+<h3 class="progress-section-title">Active</h3>
 <div id="progress-media-list" class="progress-media-list" aria-live="polite"></div>
+<h3 class="progress-section-title">Failures</h3>
+<div id="progress-fail-list" class="progress-media-list progress-fail-list" aria-live="polite"></div>
