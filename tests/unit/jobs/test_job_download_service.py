@@ -5,11 +5,14 @@ from ytpd.domain.source_kind import SourceKind
 from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
 from ytpd.download.download_pool import DownloadPool
+from ytpd.jobs.job_cancel_flag import JobCancelFlag
 from ytpd.jobs.job_download_service import JobDownloadService
+from ytpd.jobs.job_failure_log import JobFailureLog
 from ytpd.jobs.job_store import JobStore
 from ytpd.jobs.path_track_artifact_probe import PathTrackArtifactProbe
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
 from ytpd.jobs.track_artifact_paths import TrackArtifactPaths
+from ytpd.jobs.track_phase_healer import TrackPhaseHealer
 from ytpd.jobs.track_state_machine import TrackStateMachine
 from tests.fakes.fake_media_downloader import FakeMediaDownloader
 
@@ -43,12 +46,21 @@ def test_download_job_persists_success_and_failure(tmp_path: Path) -> None:
     ]
     job = store.save(replace(job, tracks=tracks))
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
+    cancel_flag = JobCancelFlag()
+    probe = PathTrackArtifactProbe(paths)
     service = JobDownloadService(
         store,
-        DownloadPool(FakeMediaDownloader(paths, {"ok"}), max_workers=2),
-        PathTrackArtifactProbe(paths),
+        DownloadPool(
+            FakeMediaDownloader(paths, {"ok"}),
+            max_workers=2,
+            cancel_flag=cancel_flag,
+        ),
+        probe,
         TrackStateMachine(),
         paths,
+        cancel_flag,
+        JobFailureLog(paths),
+        TrackPhaseHealer(probe),
     )
     updated = service.download_job(job.job_id)
     by_id = {track.track_id: track for track in updated.tracks}
