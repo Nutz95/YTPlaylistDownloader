@@ -11,6 +11,7 @@ _RESUMABLE = frozenset(
         JobStatus.PAUSED,
         JobStatus.INTERRUPTED,
         JobStatus.FAILED,
+        JobStatus.CANCELLED,
     }
 )
 

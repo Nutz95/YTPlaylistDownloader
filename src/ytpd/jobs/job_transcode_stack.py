@@ -27,9 +27,10 @@ class JobTranscodeStack:
         paths = TrackArtifactPaths(work_dir, dest_dir)
         resolved_catalog = catalog or SqliteOutputCatalog(work_dir / "catalog.db")
         self.catalog = resolved_catalog
+        self.scheduler = TranscodeScheduler(backends, resource_gate, resolved_catalog)
         self.transcode_service = JobTranscodeService(
             job_store,
-            TranscodeScheduler(backends, resource_gate, resolved_catalog),
+            self.scheduler,
             PathTrackArtifactProbe(paths),
             TrackStateMachine(),
         )

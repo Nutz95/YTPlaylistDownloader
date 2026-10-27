@@ -2,6 +2,7 @@ from dataclasses import replace
 
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.job_status import JobStatus
+from ytpd.domain.pipeline_stage import PipelineStage
 from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.jobs.job_store import JobStore
 from ytpd.ports.playlist_resolver import PlaylistResolver
@@ -26,6 +27,14 @@ class JobResolveService:
             raise InvalidJobError("job not found")
         if len(job.tracks) > 0:
             return job
+        job = self._job_store.save(
+            replace(
+                job,
+                status=JobStatus.RUNNING,
+                pipeline_stage=PipelineStage.RESOLVE,
+                error_message=None,
+            )
+        )
         try:
             resolved = self._playlist_resolver.resolve(job.source_url)
         except PlaylistResolveError as error:
@@ -34,6 +43,7 @@ class JobResolveService:
             job,
             source_kind=resolved.source_kind,
             status=JobStatus.RUNNING,
+            pipeline_stage=PipelineStage.RESOLVE,
             tracks=resolved.tracks,
         )
         return self._job_store.save(updated)

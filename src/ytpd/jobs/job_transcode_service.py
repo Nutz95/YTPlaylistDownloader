@@ -2,6 +2,7 @@ from dataclasses import replace
 
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.job_status import JobStatus
+from ytpd.domain.pipeline_stage import PipelineStage
 from ytpd.domain.resume_action import ResumeAction
 from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
@@ -36,13 +37,40 @@ class JobTranscodeService:
         pending = self._pending_tracks(job)
         if len(pending) == 0:
             return job
+        job = self._mark_transcoding(job, pending)
         results = self._scheduler.run(job, pending)
         by_id = {item.track_id: item for item in results}
         updated_tracks = [
             self._apply_result(track, by_id.get(track.track_id)) for track in job.tracks
         ]
         return self._job_store.save(
-            replace(job, status=JobStatus.RUNNING, tracks=updated_tracks)
+            replace(
+                job,
+                status=JobStatus.RUNNING,
+                pipeline_stage=PipelineStage.TRANSCODE,
+                tracks=updated_tracks,
+            )
+        )
+
+    def _mark_transcoding(
+        self,
+        job: JobSnapshot,
+        pending: list[TrackRef],
+    ) -> JobSnapshot:
+        pending_ids = {track.track_id for track in pending}
+        tracks = [
+            replace(track, phase=TrackPhase.TRANSCODING, error_message=None)
+            if track.track_id in pending_ids
+            else track
+            for track in job.tracks
+        ]
+        return self._job_store.save(
+            replace(
+                job,
+                status=JobStatus.RUNNING,
+                pipeline_stage=PipelineStage.TRANSCODE,
+                tracks=tracks,
+            )
         )
 
     def _pending_tracks(self, job: JobSnapshot) -> list[TrackRef]:

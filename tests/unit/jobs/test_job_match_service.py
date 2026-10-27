@@ -7,9 +7,12 @@ from ytpd.domain.match_score import MatchScore
 from ytpd.domain.source_kind import SourceKind
 from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
+from ytpd.jobs.job_cancel_flag import JobCancelFlag
+from ytpd.jobs.job_failure_log import JobFailureLog
 from ytpd.jobs.job_match_service import JobMatchService
 from ytpd.jobs.job_store import JobStore
 from ytpd.jobs.sqlite_job_checkpoint_store import SqliteJobCheckpointStore
+from ytpd.jobs.track_artifact_paths import TrackArtifactPaths
 from ytpd.match.match_pool import MatchPool
 from tests.fakes.fake_youtube_matcher import FakeYoutubeMatcher
 
@@ -66,9 +69,14 @@ def test_match_job_persists_partial_results_when_one_track_fails(
             ),
         }
     )
-    updated = JobMatchService(store, MatchPool(matcher, max_workers=2)).match_job(
-        job.job_id
-    )
+    cancel_flag = JobCancelFlag()
+    paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
+    updated = JobMatchService(
+        store,
+        MatchPool(matcher, max_workers=2, cancel_flag=cancel_flag),
+        cancel_flag,
+        JobFailureLog(paths),
+    ).match_job(job.job_id)
     by_id = {track.track_id: track for track in updated.tracks}
     assert by_id["ok"].phase is TrackPhase.MATCHED
     assert by_id["ok"].youtube_url == "https://youtu.be/ok"

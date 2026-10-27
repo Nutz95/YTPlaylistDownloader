@@ -62,6 +62,12 @@ def test_resume_decision_table() -> None:
             TrackArtifactFlags(True, True),
             ResumeAction.NONE,
         ),
+        (
+            TrackPhase.TRANSCODING,
+            "https://youtu.be/a",
+            TrackArtifactFlags(True, False),
+            ResumeAction.TRANSCODE,
+        ),
     ]
     for phase, url, flags, expected in cases:
         assert machine.decide(_track(phase, url), flags) is expected
