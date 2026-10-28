@@ -226,3 +226,19 @@ def test_delete_running_job_returns_409(
     response = client.delete(f"/api/jobs/{job.job_id}")
     assert response.status_code == 409
     assert "running" in response.json()["error"]
+
+
+def test_create_duplicate_source_url_returns_409(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(BuildTestApp().build(tmp_path))
+    first = client.post("/api/jobs", json={"url": "https://youtu.be/abc"})
+    assert first.status_code == 201
+    second = client.post("/api/jobs", json={"url": "https://youtu.be/abc"})
+    assert second.status_code == 409
+    assert "already exists" in second.json()["error"]
+    listed = client.get("/api/jobs")
+    assert len(listed.json()["jobs"]) == 1
+

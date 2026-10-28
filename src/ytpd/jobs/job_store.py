@@ -3,6 +3,7 @@ from uuid import uuid4
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.job_status import JobStatus
 from ytpd.domain.source_kind import SourceKind
+from ytpd.jobs.duplicate_source_url_error import DuplicateSourceUrlError
 from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.ports.job_checkpoint_store import JobCheckpointStore
 
@@ -18,6 +19,7 @@ class JobStore:
         cleaned = source_url.strip()
         if cleaned == "":
             raise InvalidJobError("source_url must be a non-empty string")
+        self._ensure_unique_source_url(cleaned)
         snapshot = JobSnapshot(
             job_id=str(uuid4()),
             source_url=cleaned,
@@ -45,3 +47,10 @@ class JobStore:
     def delete(self, job_id: str) -> bool:
         """Remove one job by id. Return True when a job was deleted."""
         return self._checkpoint_store.delete(job_id)
+
+    def _ensure_unique_source_url(self, cleaned: str) -> None:
+        for existing in self._checkpoint_store.list_jobs():
+            if existing.source_url.strip() == cleaned:
+                raise DuplicateSourceUrlError(
+                    "a job with this source URL already exists"
+                )

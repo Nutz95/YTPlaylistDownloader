@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from ytpd.jobs.duplicate_source_url_error import DuplicateSourceUrlError
 from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.jobs.job_delete_service import JobDeleteService
 from ytpd.jobs.job_download_service import JobDownloadService
@@ -69,6 +70,8 @@ class JobsApiHandler:
             )
         try:
             snapshot = self._job_store.create(raw_url)
+        except DuplicateSourceUrlError as error:
+            return JSONResponse(status_code=409, content={"error": str(error)})
         except InvalidJobError as error:
             return JSONResponse(status_code=400, content={"error": str(error)})
         started = self._pipeline_runner.drain_queue()
@@ -184,6 +187,7 @@ class JobsApiHandler:
             status_code = 404 if "not found" in str(error) else 409
             return JSONResponse(status_code=status_code, content={"error": str(error)})
         return JSONResponse(content={"ok": True, "job_id": job_id})
+
 
     def retry_failed_job(self, job_id: str) -> JSONResponse:
         """Reset failed tracks and start the pipeline again for those tracks."""
