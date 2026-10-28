@@ -7,6 +7,7 @@ class ProgressSnapshotJsonPayload(TypedDict):
     """JSON shape for a job progress snapshot."""
 
     job_id: str
+    job_status: str
     percent: float
     completed_tracks: int
     total_tracks: int

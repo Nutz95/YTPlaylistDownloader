@@ -1,12 +1,7 @@
 (() => {
   const urlInput = document.getElementById("job-url");
   const createButton = document.getElementById("job-create");
-  const runButton = document.getElementById("job-run");
   const cancelButton = document.getElementById("job-cancel");
-  const resolveButton = document.getElementById("job-resolve");
-  const matchButton = document.getElementById("job-match");
-  const downloadButton = document.getElementById("job-download");
-  const transcodeButton = document.getElementById("job-transcode");
   const resumeButton = document.getElementById("job-resume");
   const retryFailedButton = document.getElementById("job-retry-failed");
   const refreshButton = document.getElementById("job-refresh-list");
@@ -18,12 +13,7 @@
   if (
     !urlInput ||
     !createButton ||
-    !runButton ||
     !cancelButton ||
-    !resolveButton ||
-    !matchButton ||
-    !downloadButton ||
-    !transcodeButton ||
     !resumeButton ||
     !retryFailedButton ||
     !refreshButton ||
@@ -38,6 +28,8 @@
 
   let latestJobs = [];
   let statusOverride = "";
+  let lastProgressKey = "";
+  const terminalStatuses = new Set(["completed", "failed", "cancelled"]);
 
   function canDeleteJob(job) {
     return job && job.status !== "running";
@@ -63,12 +55,20 @@
         button.classList.add("is-selected");
       }
       const title = document.createElement("div");
-      title.textContent = job.source_url;
+      const sourceTitle = (job.source_title || "").trim();
+      title.textContent = sourceTitle || job.source_url;
       const meta = document.createElement("div");
       meta.className = "meta";
       const stage = job.pipeline_stage ? ` · ${job.pipeline_stage}` : "";
       meta.textContent = `${selection.shortId(job.job_id)} · ${job.status}${stage} · ${job.source_kind} · ${job.track_count} tracks`;
-      button.append(title, meta);
+      if (sourceTitle) {
+        const urlLine = document.createElement("div");
+        urlLine.className = "meta";
+        urlLine.textContent = job.source_url;
+        button.append(title, urlLine, meta);
+      } else {
+        button.append(title, meta);
+      }
       button.addEventListener("click", () => {
         statusOverride = "";
         selection.setSelectedJobId(job.job_id);
@@ -188,12 +188,36 @@
     if (!jobId) {
       return;
     }
+    lastProgressKey = "";
     loadJobDetail(jobId);
     livePanel.startLiveWatch();
   });
 
+  window.addEventListener("ytpd-progress-tick", async (event) => {
+    const detail = event.detail || {};
+    const jobId = detail.jobId || "";
+    const jobStatus = detail.jobStatus || "";
+    const stage = detail.stage || "idle";
+    if (!jobId) {
+      return;
+    }
+    const progressKey = `${jobId}|${jobStatus}|${stage}`;
+    if (progressKey === lastProgressKey) {
+      return;
+    }
+    lastProgressKey = progressKey;
+    if (terminalStatuses.has(jobStatus)) {
+      statusOverride = "";
+    }
+    await refreshJobList(false);
+    if (selection.getSelectedJobId() === jobId) {
+      await loadJobDetail(jobId);
+    }
+  });
+
   createButton.addEventListener("click", async () => {
     statusOverride = "";
+    status.textContent = "Creating job…";
     const response = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -205,30 +229,19 @@
       return;
     }
     selection.setSelectedJobId(body.job_id);
-    await refreshJobList(false);
-  });
-
-  runButton.addEventListener("click", async () => {
-    const jobId = selection.getSelectedJobId();
-    if (!jobId) {
-      status.textContent = "Select or create a job first.";
-      return;
-    }
-    statusOverride = "";
-    status.textContent = "Starting pipeline…";
-    const response = await fetch(`/api/jobs/${jobId}/run`, { method: "POST" });
-    const body = await response.json();
-    if (!response.ok) {
-      status.textContent = body.error || "Pipeline failed.";
-      return;
-    }
-    statusOverride = `Pipeline running — ${selection.shortId(body.job_id)} · open Progression for live stage / track`;
     paintSelectedSummary(body);
     paintTracks(body);
     await refreshJobList(false);
-    window.dispatchEvent(
-      new CustomEvent("ytpd-pipeline-started", { detail: { jobId: body.job_id } })
-    );
+    if (body.started) {
+      statusOverride = `Pipeline running — ${selection.shortId(body.job_id)} · open Progression for live stage / track`;
+      status.textContent = statusOverride;
+      window.dispatchEvent(
+        new CustomEvent("ytpd-pipeline-started", { detail: { jobId: body.job_id } })
+      );
+    } else {
+      statusOverride = `Queued — ${selection.shortId(body.job_id)} · starts when the current job finishes`;
+      status.textContent = statusOverride;
+    }
   });
 
   cancelButton.addEventListener("click", async () => {
@@ -273,81 +286,6 @@
     window.dispatchEvent(
       new CustomEvent("ytpd-pipeline-started", { detail: { jobId: body.job_id } })
     );
-  });
-
-  resolveButton.addEventListener("click", async () => {
-    const jobId = selection.getSelectedJobId();
-    if (!jobId) {
-      status.textContent = "Select or create a job first.";
-      return;
-    }
-    statusOverride = "";
-    const response = await fetch(`/api/jobs/${jobId}/resolve`, { method: "POST" });
-    const body = await response.json();
-    if (!response.ok) {
-      status.textContent = body.error || "Resolve failed.";
-      return;
-    }
-    paintSelectedSummary(body);
-    paintTracks(body);
-    await refreshJobList(false);
-  });
-
-  matchButton.addEventListener("click", async () => {
-    const jobId = selection.getSelectedJobId();
-    if (!jobId) {
-      status.textContent = "Select a job first.";
-      return;
-    }
-    statusOverride = "";
-    status.textContent = "Matching YouTube…";
-    const response = await fetch(`/api/jobs/${jobId}/match`, { method: "POST" });
-    const body = await response.json();
-    if (!response.ok) {
-      status.textContent = body.error || "Match failed.";
-      return;
-    }
-    paintSelectedSummary(body);
-    paintTracks(body);
-    await refreshJobList(false);
-  });
-
-  downloadButton.addEventListener("click", async () => {
-    const jobId = selection.getSelectedJobId();
-    if (!jobId) {
-      status.textContent = "Select a job first.";
-      return;
-    }
-    statusOverride = "";
-    status.textContent = "Downloading…";
-    const response = await fetch(`/api/jobs/${jobId}/download`, { method: "POST" });
-    const body = await response.json();
-    if (!response.ok) {
-      status.textContent = body.error || "Download failed.";
-      return;
-    }
-    paintSelectedSummary(body);
-    paintTracks(body);
-    await refreshJobList(false);
-  });
-
-  transcodeButton.addEventListener("click", async () => {
-    const jobId = selection.getSelectedJobId();
-    if (!jobId) {
-      status.textContent = "Select a job first.";
-      return;
-    }
-    statusOverride = "";
-    status.textContent = "Transcoding…";
-    const response = await fetch(`/api/jobs/${jobId}/transcode`, { method: "POST" });
-    const body = await response.json();
-    if (!response.ok) {
-      status.textContent = body.error || "Transcode failed.";
-      return;
-    }
-    paintSelectedSummary(body);
-    paintTracks(body);
-    await refreshJobList(false);
   });
 
   resumeButton.addEventListener("click", async () => {

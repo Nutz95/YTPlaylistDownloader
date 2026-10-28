@@ -82,7 +82,17 @@
     if (!response.ok) {
       return;
     }
-    paintLive(await response.json());
+    const snapshot = await response.json();
+    paintLive(snapshot);
+    window.dispatchEvent(
+      new CustomEvent("ytpd-progress-tick", {
+        detail: {
+          jobId: snapshot.job_id || jobId,
+          jobStatus: snapshot.job_status || "",
+          stage: snapshot.stage || "idle",
+        },
+      })
+    );
   }
 
   function startLiveWatch() {

@@ -56,7 +56,9 @@
       const option = document.createElement("option");
       option.value = job.job_id;
       const stage = job.pipeline_stage ? ` · ${job.pipeline_stage}` : "";
-      option.textContent = `${selection.shortId(job.job_id)} · ${job.status}${stage} · ${job.track_count} tracks · ${job.source_url}`;
+      const sourceTitle = (job.source_title || "").trim();
+      const labelText = sourceTitle || job.source_url;
+      option.textContent = `${selection.shortId(job.job_id)} · ${job.status}${stage} · ${job.track_count} tracks · ${labelText}`;
       jobSelect.appendChild(option);
     });
     jobSelect.value = selectedId || "";
@@ -88,10 +90,12 @@
 
   function render(snapshot) {
     const stage = snapshot.stage || "idle";
+    const jobStatus = snapshot.job_status || "";
+    const statusSuffix = jobStatus ? ` · ${jobStatus}` : "";
     stageLine.textContent =
       stage === "idle"
-        ? `Stage: idle · finished ${snapshot.completed_tracks}/${snapshot.total_tracks}`
-        : `Stage: ${stage} · ${snapshot.stage_done}/${snapshot.stage_total}`;
+        ? `Stage: idle${statusSuffix} · finished ${snapshot.completed_tracks}/${snapshot.total_tracks}`
+        : `Stage: ${stage}${statusSuffix} · ${snapshot.stage_done}/${snapshot.stage_total}`;
     label.textContent = snapshot.label;
     fill.style.width = `${snapshot.percent}%`;
     appendActiveCards(
@@ -125,7 +129,17 @@
       failList.innerHTML = "";
       return;
     }
-    render(await response.json());
+    const snapshot = await response.json();
+    render(snapshot);
+    window.dispatchEvent(
+      new CustomEvent("ytpd-progress-tick", {
+        detail: {
+          jobId: snapshot.job_id || jobId,
+          jobStatus: snapshot.job_status || "",
+          stage: snapshot.stage || "idle",
+        },
+      })
+    );
   }
 
   function startWatch() {

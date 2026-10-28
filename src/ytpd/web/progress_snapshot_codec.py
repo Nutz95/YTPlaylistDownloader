@@ -14,6 +14,7 @@ class ProgressSnapshotCodec:
         """Serialize a progress snapshot for HTTP responses."""
         return {
             "job_id": snapshot.job_id,
+            "job_status": snapshot.job_status.value,
             "percent": snapshot.global_progress.percent,
             "completed_tracks": snapshot.global_progress.completed_tracks,
             "total_tracks": snapshot.global_progress.total_tracks,

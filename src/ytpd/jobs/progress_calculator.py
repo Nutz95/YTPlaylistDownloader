@@ -69,6 +69,7 @@ class ProgressCalculator:
         ][:_FAILED_MEDIA_LIMIT]
         return ProgressSnapshot(
             job_id=job.job_id,
+            job_status=job.status,
             global_progress=GlobalProgress(
                 percent=percent,
                 completed_tracks=completed,

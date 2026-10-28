@@ -56,6 +56,7 @@ def test_global_percent_and_active_media_filter() -> None:
         pipeline_stage=PipelineStage.DOWNLOAD,
     )
     snapshot = ProgressCalculator(store).from_job(job)
+    assert snapshot.job_status is JobStatus.RUNNING
     assert snapshot.global_progress.percent == 77.5
     assert snapshot.global_progress.stage == "download"
     assert snapshot.global_progress.stage_done == 1
