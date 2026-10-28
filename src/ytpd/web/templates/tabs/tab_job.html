@@ -26,7 +26,10 @@
 </div>
 <section class="job-list-panel" aria-labelledby="job-list-heading">
   <h3 id="job-list-heading">Saved jobs</h3>
-  <p class="hint">Select a job to inspect tracks. Use Supprimer to drop a finished job (MP3s in the output folder are kept).</p>
+  <p class="hint">Select a job to inspect tracks. Use Supprimer to drop a finished job, or Supprimer les terminés for every completed job (MP3s in the output folder are kept).</p>
+  <div class="job-actions">
+    <button type="button" id="job-delete-completed">Supprimer les terminés</button>
+  </div>
   <ul id="job-list" class="job-list" aria-live="polite"></ul>
 </section>
 <p class="hint" id="job-status">No job selected.</p>

@@ -122,6 +122,11 @@ class AppFactory:
     def _register_job_routes(self, app: FastAPI, jobs_handler: JobsApiHandler) -> None:
         app.add_api_route("/api/jobs", jobs_handler.create_job, methods=["POST"])
         app.add_api_route("/api/jobs", jobs_handler.list_jobs, methods=["GET"])
+        app.add_api_route(
+            "/api/jobs/completed",
+            jobs_handler.delete_completed_jobs,
+            methods=["DELETE"],
+        )
         app.add_api_route("/api/jobs/{job_id}", jobs_handler.get_job, methods=["GET"])
         app.add_api_route(
             "/api/jobs/{job_id}", jobs_handler.delete_job, methods=["DELETE"]

@@ -188,6 +188,16 @@ class JobsApiHandler:
             return JSONResponse(status_code=status_code, content={"error": str(error)})
         return JSONResponse(content={"ok": True, "job_id": job_id})
 
+    def delete_completed_jobs(self) -> JSONResponse:
+        """Delete every completed job checkpoint (output MP3s are kept)."""
+        deleted_job_ids = self._delete_service.delete_completed()
+        return JSONResponse(
+            content={
+                "ok": True,
+                "deleted_count": len(deleted_job_ids),
+                "deleted_job_ids": deleted_job_ids,
+            }
+        )
 
     def retry_failed_job(self, job_id: str) -> JSONResponse:
         """Reset failed tracks and start the pipeline again for those tracks."""

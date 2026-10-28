@@ -34,3 +34,22 @@ class JobDeleteService:
         work_dir = self._paths.job_work_dir(job)
         if work_dir.is_dir():
             shutil.rmtree(work_dir)
+
+    def delete_completed(self) -> list[str]:
+        """Delete every COMPLETED job; skip ones that cannot be deleted now."""
+        deleted_job_ids: list[str] = []
+        for job in self._job_store.list_jobs():
+            if not self._try_delete_completed(job.job_id):
+                continue
+            deleted_job_ids.append(job.job_id)
+        return deleted_job_ids
+
+    def _try_delete_completed(self, job_id: str) -> bool:
+        latest = self._job_store.get(job_id)
+        if latest is None or latest.status is not JobStatus.COMPLETED:
+            return False
+        try:
+            self.delete(job_id)
+        except InvalidJobError:
+            return False
+        return True

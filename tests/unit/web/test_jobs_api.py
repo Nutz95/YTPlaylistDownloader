@@ -242,3 +242,25 @@ def test_create_duplicate_source_url_returns_409(
     listed = client.get("/api/jobs")
     assert len(listed.json()["jobs"]) == 1
 
+
+def test_delete_completed_jobs_endpoint(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
+    done = store.create("https://youtu.be/done")
+    store.save(replace(done, status=JobStatus.COMPLETED))
+    keep = store.create("https://youtu.be/keep")
+    store.save(replace(keep, status=JobStatus.FAILED))
+    client = TestClient(BuildTestApp().build(tmp_path))
+    purged = client.delete("/api/jobs/completed")
+    assert purged.status_code == 200
+    body = purged.json()
+    assert body["ok"] is True
+    assert body["deleted_count"] == 1
+    assert body["deleted_job_ids"] == [done.job_id]
+    listed = client.get("/api/jobs")
+    job_ids = [item["job_id"] for item in listed.json()["jobs"]]
+    assert job_ids == [keep.job_id]
+

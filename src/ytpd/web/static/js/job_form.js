@@ -5,6 +5,7 @@
   const resumeButton = document.getElementById("job-resume");
   const retryFailedButton = document.getElementById("job-retry-failed");
   const refreshButton = document.getElementById("job-refresh-list");
+  const deleteCompletedButton = document.getElementById("job-delete-completed");
   const status = document.getElementById("job-status");
   const trackList = document.getElementById("job-track-list");
   const jobList = document.getElementById("job-list");
@@ -17,6 +18,7 @@
     !resumeButton ||
     !retryFailedButton ||
     !refreshButton ||
+    !deleteCompletedButton ||
     !status ||
     !trackList ||
     !jobList ||
@@ -92,6 +94,25 @@
     });
   }
 
+  function clearSelectionIfDeleted(deletedIds) {
+    const selectedId = selection.getSelectedJobId();
+    if (!selectedId || !deletedIds.includes(selectedId)) {
+      return;
+    }
+    selection.clearSelectedJobId();
+    urlInput.value = "";
+    trackList.innerHTML = "";
+    livePanel.clearLive();
+  }
+
+  async function readJsonBody(response) {
+    try {
+      return await response.json();
+    } catch (_error) {
+      return {};
+    }
+  }
+
   async function deleteJob(jobId) {
     if (!jobId) {
       return;
@@ -99,20 +120,49 @@
     statusOverride = "";
     status.textContent = "Deleting job…";
     const response = await fetch(`/api/jobs/${jobId}`, { method: "DELETE" });
-    const body = await response.json();
+    const body = await readJsonBody(response);
     if (!response.ok) {
       status.textContent = body.error || "Delete failed.";
+      await refreshJobList(false);
       return;
     }
-    if (selection.getSelectedJobId() === jobId) {
-      selection.clearSelectedJobId();
-      urlInput.value = "";
-      trackList.innerHTML = "";
-      livePanel.clearLive();
-    }
+    clearSelectionIfDeleted([jobId]);
     statusOverride = `Deleted — ${selection.shortId(jobId)}`;
     status.textContent = statusOverride;
     await refreshJobList(false);
+  }
+
+  async function deleteCompletedJobs() {
+    if (deleteCompletedButton.disabled) {
+      return;
+    }
+    const confirmed = window.confirm(
+      "Supprimer tous les jobs terminés (completed) ? Les MP3 restent dans le dossier de sortie."
+    );
+    if (!confirmed) {
+      return;
+    }
+    deleteCompletedButton.disabled = true;
+    statusOverride = "";
+    status.textContent = "Deleting completed jobs…";
+    try {
+      const response = await fetch("/api/jobs/completed", { method: "DELETE" });
+      const body = await readJsonBody(response);
+      if (!response.ok) {
+        status.textContent = body.error || "Delete completed failed.";
+        return;
+      }
+      const deletedIds = Array.isArray(body.deleted_job_ids) ? body.deleted_job_ids : [];
+      clearSelectionIfDeleted(deletedIds);
+      const count = typeof body.deleted_count === "number" ? body.deleted_count : deletedIds.length;
+      statusOverride = count === 0
+        ? "No completed jobs to delete."
+        : `Deleted ${count} completed job${count === 1 ? "" : "s"}`;
+      status.textContent = statusOverride;
+    } finally {
+      deleteCompletedButton.disabled = false;
+      await refreshJobList(false);
+    }
   }
 
   function paintTracks(job) {
@@ -329,6 +379,10 @@
   refreshButton.addEventListener("click", () => {
     statusOverride = "";
     refreshJobList(true);
+  });
+
+  deleteCompletedButton.addEventListener("click", () => {
+    deleteCompletedJobs();
   });
 
   refreshJobList(true);
