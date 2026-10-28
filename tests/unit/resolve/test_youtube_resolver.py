@@ -14,14 +14,18 @@ _FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
 
 def test_parser_and_resolver_from_playlist_fixture() -> None:
     fixture = (_FIXTURES / "youtube_playlist_flat.json").read_text(encoding="utf-8")
-    entries = YtdlpFlatPlaylistParser().parse(fixture)
+    parsed = YtdlpFlatPlaylistParser().parse(fixture)
     url = "https://www.youtube.com/playlist?list=PLtest"
-    client = FakeYtdlpFlatPlaylistClient({url: entries})
+    client = FakeYtdlpFlatPlaylistClient(
+        {url: parsed.entries},
+        titles_by_url={url: parsed.title or ""},
+    )
     result = YoutubeResolver(
         client,
         FakeYtdlpVideoMetadataClient({}),
     ).resolve(url, SourceKind.YOUTUBE_PLAYLIST)
     assert result.source_kind is SourceKind.YOUTUBE_PLAYLIST
+    assert result.source_title == "Demo playlist"
     assert len(result.tracks) == 2
     assert result.tracks[0].track_id == "vid1"
     assert result.tracks[0].phase is TrackPhase.MATCHED
@@ -38,6 +42,7 @@ def test_resolver_expands_chaptered_video() -> None:
         FakeYtdlpVideoMetadataClient({url: metadata}),
     ).resolve(url, SourceKind.YOUTUBE_VIDEO)
     assert len(result.tracks) == 3
+    assert result.source_title == metadata.title
     assert result.tracks[0].track_id == "2UznMNQQ0H8__ch00"
     assert result.tracks[0].title == "Metamorphosis umbrae"
     assert result.tracks[0].artist == "KageYume"
@@ -64,13 +69,15 @@ def test_resolver_single_video_without_chapters() -> None:
         FakeYtdlpVideoMetadataClient({url: metadata}),
     ).resolve(url, SourceKind.YOUTUBE_VIDEO)
     assert len(result.tracks) == 1
+    assert result.source_title == "Single Video"
     assert result.tracks[0].track_id == "single1"
     assert result.tracks[0].artist == "Solo Artist"
     assert result.tracks[0].parent_video_id is None
 
 
 def test_parser_empty_entries_stays_empty() -> None:
-    tracks = YtdlpFlatPlaylistParser().parse(
+    parsed = YtdlpFlatPlaylistParser().parse(
         '{"id":"PLempty","title":"Empty","entries":[]}'
     )
-    assert tracks == []
+    assert parsed.title == "Empty"
+    assert parsed.entries == []

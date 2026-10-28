@@ -1,6 +1,7 @@
 from typing import cast
 
 from ytpd.domain.job_snapshot import JobSnapshot
+from ytpd.web.job_display_title import JobDisplayTitle
 from ytpd.web.job_list_item_json_payload import JobListItemJsonPayload
 from ytpd.web.job_status_name import JobStatusName
 from ytpd.web.pipeline_stage_name import PipelineStageName
@@ -9,6 +10,9 @@ from ytpd.web.source_kind_name import SourceKindName
 
 class JobListItemCodec:
     """Convert job snapshots to lightweight list-row payloads."""
+
+    def __init__(self) -> None:
+        self._display_title = JobDisplayTitle()
 
     def to_payload(self, snapshot: JobSnapshot) -> JobListItemJsonPayload:
         """Serialize a job summary without embedding track bodies."""
@@ -25,4 +29,5 @@ class JobListItemCodec:
             "track_count": len(snapshot.tracks),
             "error_message": snapshot.error_message,
             "pipeline_stage": stage,
+            "source_title": self._display_title.for_snapshot(snapshot),
         }

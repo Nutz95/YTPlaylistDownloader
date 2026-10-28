@@ -17,4 +17,4 @@ class SubprocessYoutubeSearchClient:
     def search(self, query: str, limit: int) -> list[YtdlpFlatEntry]:
         """Return up to ``limit`` flat search hits for ``query``."""
         safe_limit = max(1, limit)
-        return self._probe.run(f"ytsearch{safe_limit}:{query}")
+        return self._probe.run(f"ytsearch{safe_limit}:{query}").entries

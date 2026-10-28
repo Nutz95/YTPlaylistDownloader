@@ -45,5 +45,6 @@ class JobResolveService:
             status=JobStatus.RUNNING,
             pipeline_stage=PipelineStage.RESOLVE,
             tracks=resolved.tracks,
+            source_title=resolved.source_title,
         )
         return self._job_store.save(updated)

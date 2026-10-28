@@ -1,7 +1,7 @@
 import json
 import subprocess
 
-from ytpd.domain.ytdlp_flat_entry import YtdlpFlatEntry
+from ytpd.domain.ytdlp_flat_playlist_result import YtdlpFlatPlaylistResult
 from ytpd.resolve.ytdlp_argv_builder import YtdlpArgvBuilder
 from ytpd.resolve.ytdlp_flat_playlist_parser import YtdlpFlatPlaylistParser
 from ytpd.resolve.ytdlp_probe_error import YtdlpProbeError
@@ -22,7 +22,7 @@ class SubprocessYtdlpJsonProbe:
         self._runner = SubprocessTextRunner()
         self._argv_builder = argv_builder or YtdlpArgvBuilder()
 
-    def run(self, target: str) -> list[YtdlpFlatEntry]:
+    def run(self, target: str) -> YtdlpFlatPlaylistResult:
         """Probe ``target`` (URL or ``ytsearchN:query``) with flat JSON output."""
         try:
             completed = self._runner.run(

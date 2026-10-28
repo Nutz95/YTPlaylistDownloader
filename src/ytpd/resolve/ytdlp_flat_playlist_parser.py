@@ -2,21 +2,23 @@ import json
 from collections.abc import Mapping
 
 from ytpd.domain.ytdlp_flat_entry import YtdlpFlatEntry
+from ytpd.domain.ytdlp_flat_playlist_result import YtdlpFlatPlaylistResult
 from ytpd.resolve.ytdlp_probe_error import YtdlpProbeError
 
 
 class YtdlpFlatPlaylistParser:
-    """Parse yt-dlp ``--flat-playlist -J`` JSON into typed flat entries."""
+    """Parse yt-dlp ``--flat-playlist -J`` JSON into a titled entry list."""
 
-    def parse(self, text: str) -> list[YtdlpFlatEntry]:
-        """Parse a yt-dlp JSON dump into flat entries."""
+    def parse(self, text: str) -> YtdlpFlatPlaylistResult:
+        """Parse a yt-dlp JSON dump into playlist title plus flat entries."""
         loaded = json.loads(text)
         if not isinstance(loaded, dict):
             raise YtdlpProbeError("yt-dlp JSON root must be an object")
+        title = self._root_title(loaded)
         if "entries" in loaded:
             entries_raw = loaded.get("entries")
             if entries_raw is None:
-                return []
+                return YtdlpFlatPlaylistResult(title=title, entries=[])
             if not isinstance(entries_raw, list):
                 raise YtdlpProbeError("yt-dlp entries must be a list")
             tracks: list[YtdlpFlatEntry] = []
@@ -26,8 +28,17 @@ class YtdlpFlatPlaylistParser:
                 if not isinstance(raw, dict):
                     raise YtdlpProbeError(f"entry {index} must be an object")
                 tracks.append(self._parse_entry(raw, index))
-            return tracks
-        return [self._parse_entry(loaded, 0)]
+            return YtdlpFlatPlaylistResult(title=title, entries=tracks)
+        return YtdlpFlatPlaylistResult(
+            title=title,
+            entries=[self._parse_entry(loaded, 0)],
+        )
+
+    def _root_title(self, loaded: Mapping[str, object]) -> str | None:
+        title = loaded.get("title")
+        if not isinstance(title, str) or title.strip() == "":
+            return None
+        return title.strip()
 
     def _parse_entry(
         self,

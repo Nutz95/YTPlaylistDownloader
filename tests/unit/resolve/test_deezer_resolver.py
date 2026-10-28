@@ -49,10 +49,12 @@ def test_deezer_resolver_maps_tracks_to_resolved_phase() -> None:
                     duration_sec=200,
                 )
             ]
-        }
+        },
+        titles_by_url={url: "Demo Deezer Mix"},
     )
     result = DeezerResolver(client).resolve(url, SourceKind.DEEZER_PLAYLIST)
     assert result.source_kind is SourceKind.DEEZER_PLAYLIST
+    assert result.source_title == "Demo Deezer Mix"
     assert len(result.tracks) == 1
     assert result.tracks[0].phase is TrackPhase.RESOLVED
     assert result.tracks[0].deezer_id == "101"
@@ -62,10 +64,12 @@ def test_deezer_resolver_maps_tracks_to_resolved_phase() -> None:
 def test_playlist_api_client_short_link_and_pagination() -> None:
     short = "https://link.deezer.com/s/demo"
     long_url = "https://www.deezer.com/playlist/42"
+    meta_url = "https://api.deezer.com/playlist/42"
     page1_url = "https://api.deezer.com/playlist/42/tracks"
     page2_url = "https://api.deezer.com/playlist/42/tracks?index=1"
     transport = FakeDeezerHttpTransport(
         text_by_url={
+            meta_url: '{"id":42,"title":"Paginated Mix"}',
             page1_url: (_FIXTURES / "deezer_tracks_page1.json").read_text(
                 encoding="utf-8"
             ),
@@ -76,5 +80,6 @@ def test_playlist_api_client_short_link_and_pagination() -> None:
         final_url_by_short={short: long_url},
     )
     client = DeezerPlaylistApiClient(transport)
-    tracks = client.fetch_playlist_tracks(short)
-    assert [item.deezer_id for item in tracks] == ["101", "202"]
+    playlist = client.fetch_playlist(short)
+    assert playlist.title == "Paginated Mix"
+    assert [item.deezer_id for item in playlist.tracks] == ["101", "202"]

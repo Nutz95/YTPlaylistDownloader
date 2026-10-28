@@ -17,6 +17,7 @@ class JobSnapshot:
     tracks: list[TrackRef]
     error_message: str | None
     pipeline_stage: PipelineStage | None = None
+    source_title: str | None = None
 
     def with_status(self, status: JobStatus) -> "JobSnapshot":
         """Return a copy of this snapshot with a different lifecycle status."""

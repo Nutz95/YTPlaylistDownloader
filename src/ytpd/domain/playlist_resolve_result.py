@@ -10,3 +10,4 @@ class PlaylistResolveResult:
 
     source_kind: SourceKind
     tracks: list[TrackRef]
+    source_title: str | None = None

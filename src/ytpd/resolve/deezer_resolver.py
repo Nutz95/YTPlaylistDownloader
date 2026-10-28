@@ -14,8 +14,8 @@ class DeezerResolver:
 
     def resolve(self, url: str, source_kind: SourceKind) -> PlaylistResolveResult:
         """Fetch Deezer tracks for an already-classified Deezer playlist URL."""
-        entries = self._client.fetch_playlist_tracks(url)
-        if len(entries) == 0:
+        playlist = self._client.fetch_playlist(url)
+        if len(playlist.tracks) == 0:
             raise DeezerApiError("deezer resolve returned no tracks")
         tracks = [
             TrackRef(
@@ -29,6 +29,10 @@ class DeezerResolver:
                 deezer_id=entry.deezer_id,
                 error_message=None,
             )
-            for entry in entries
+            for entry in playlist.tracks
         ]
-        return PlaylistResolveResult(source_kind=source_kind, tracks=tracks)
+        return PlaylistResolveResult(
+            source_kind=source_kind,
+            tracks=tracks,
+            source_title=playlist.title,
+        )

@@ -16,3 +16,4 @@ class JobJsonPayload(TypedDict):
     error_message: str | None
     tracks: list[TrackJsonPayload]
     pipeline_stage: NotRequired[PipelineStageName | None]
+    source_title: NotRequired[str | None]

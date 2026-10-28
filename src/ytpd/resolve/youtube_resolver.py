@@ -26,11 +26,18 @@ class YoutubeResolver:
         """Fetch metadata and expand chaptered videos into one track per chapter."""
         if source_kind is SourceKind.YOUTUBE_VIDEO:
             return self._resolve_video(url, source_kind)
-        entries = self._flat_client.fetch_flat(url)
-        if len(entries) == 0:
+        playlist = self._flat_client.fetch_flat(url)
+        if len(playlist.entries) == 0:
             raise YtdlpProbeError("youtube resolve returned no entries")
-        tracks = [self._track_from_flat_entry(entry, source_kind) for entry in entries]
-        return PlaylistResolveResult(source_kind=source_kind, tracks=tracks)
+        tracks = [
+            self._track_from_flat_entry(entry, source_kind)
+            for entry in playlist.entries
+        ]
+        return PlaylistResolveResult(
+            source_kind=source_kind,
+            tracks=tracks,
+            source_title=playlist.title,
+        )
 
     def _resolve_video(
         self,
@@ -42,7 +49,11 @@ class YoutubeResolver:
             tracks = self._tracks_from_chapters(metadata, source_kind)
         else:
             tracks = [self._track_from_video_metadata(metadata, source_kind)]
-        return PlaylistResolveResult(source_kind=source_kind, tracks=tracks)
+        return PlaylistResolveResult(
+            source_kind=source_kind,
+            tracks=tracks,
+            source_title=metadata.title,
+        )
 
     def _tracks_from_chapters(
         self,

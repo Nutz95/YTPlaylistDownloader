@@ -15,3 +15,4 @@ class JobListItemJsonPayload(TypedDict):
     track_count: int
     error_message: str | None
     pipeline_stage: NotRequired[PipelineStageName | None]
+    source_title: NotRequired[str | None]

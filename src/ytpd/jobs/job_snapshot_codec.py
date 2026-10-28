@@ -42,6 +42,7 @@ class JobSnapshotCodec:
             "error_message": snapshot.error_message,
             "tracks": [self._track_to_payload(track) for track in snapshot.tracks],
             "pipeline_stage": stage,
+            "source_title": snapshot.source_title,
         }
 
     def from_json_text(self, text: str) -> JobSnapshot:
@@ -56,6 +57,7 @@ class JobSnapshotCodec:
         error_message = loaded.get("error_message")
         tracks_raw = loaded.get("tracks")
         pipeline_stage = loaded.get("pipeline_stage")
+        source_title = loaded.get("source_title")
         if not isinstance(job_id, str) or not isinstance(source_url, str):
             raise InvalidJobError("job_id/source_url must be strings")
         if not isinstance(source_kind, str) or not isinstance(status, str):
@@ -66,6 +68,8 @@ class JobSnapshotCodec:
             raise InvalidJobError("tracks must be a list")
         if pipeline_stage is not None and not isinstance(pipeline_stage, str):
             raise InvalidJobError("pipeline_stage must be a string or null")
+        if source_title is not None and not isinstance(source_title, str):
+            raise InvalidJobError("source_title must be a string or null")
         try:
             SourceKind(source_kind)
             JobStatus(status)
@@ -86,6 +90,7 @@ class JobSnapshotCodec:
                 if pipeline_stage is not None
                 else None
             ),
+            "source_title": source_title,
         }
         return self.from_payload(payload)
 
@@ -102,6 +107,7 @@ class JobSnapshotCodec:
             tracks=tracks,
             error_message=payload["error_message"],
             pipeline_stage=stage,
+            source_title=payload.get("source_title"),
         )
 
     def _parse_track_mapping(self, item: TrackJsonPayload) -> TrackJsonPayload:
