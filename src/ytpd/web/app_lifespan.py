@@ -8,7 +8,7 @@ from ytpd.ports.lm_studio_model_runtime import LmStudioModelRuntime
 
 
 class AppLifespan:
-    """FastAPI lifespan: cancel pipeline and unload LM Studio on shutdown."""
+    """FastAPI lifespan: drain queued jobs on start; cancel and unload on stop."""
 
     def __init__(
         self,
@@ -20,7 +20,8 @@ class AppLifespan:
 
     @asynccontextmanager
     async def handle(self, _app: FastAPI) -> AsyncIterator[None]:
-        """Yield while the app runs; cancel work and release the model on exit."""
+        """Drain the job queue at startup; cancel work and release the model on exit."""
+        self._pipeline_runner.drain_queue()
         yield
         self._pipeline_runner.cancel()
         self._lm_runtime.release()

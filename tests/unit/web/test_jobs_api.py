@@ -26,7 +26,8 @@ def test_create_and_get_job(
     created = client.post("/api/jobs", json={"url": "https://youtu.be/abc"})
     assert created.status_code == 201
     body = created.json()
-    assert body["status"] == "queued"
+    assert body["started"] is True
+    assert body["status"] == "running"
     assert body["tracks"] == []
     fetched = client.get(f"/api/jobs/{body['job_id']}")
     assert fetched.status_code == 200
@@ -59,8 +60,9 @@ def test_resume_job_starts_pipeline_with_resolve_plan(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     client = TestClient(BuildTestApp().build(tmp_path))
-    created = client.post("/api/jobs", json={"url": "https://youtu.be/abc"}).json()
-    resumed = client.post(f"/api/jobs/{created['job_id']}/resume")
+    store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
+    job = store.create("https://youtu.be/abc")
+    resumed = client.post(f"/api/jobs/{job.job_id}/resume")
     assert resumed.status_code == 200
     body = resumed.json()
     assert body["job_action"] == "resolve_playlist"
@@ -85,20 +87,24 @@ def test_resolve_youtube_job_persists_tracks(
     monkeypatch.chdir(tmp_path)
     fixture = (_FIXTURES / "youtube_playlist_flat.json").read_text(encoding="utf-8")
     url = "https://www.youtube.com/playlist?list=PLtest"
-    entries = YtdlpFlatPlaylistParser().parse(fixture)
+    parsed = YtdlpFlatPlaylistParser().parse(fixture)
     client = TestClient(
         BuildTestApp().build(
             tmp_path,
-            ytdlp_client=FakeYtdlpFlatPlaylistClient({url: entries}),
+            ytdlp_client=FakeYtdlpFlatPlaylistClient(
+                {url: parsed.entries},
+                titles_by_url={url: parsed.title or ""},
+            ),
         )
     )
-    created = client.post("/api/jobs", json={"url": url}).json()
-    resolved = client.post(f"/api/jobs/{created['job_id']}/resolve")
+    store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
+    job = store.create(url)
+    resolved = client.post(f"/api/jobs/{job.job_id}/resolve")
     assert resolved.status_code == 200
     body = resolved.json()
     assert body["source_kind"] == "youtube_playlist"
     assert len(body["tracks"]) == 2
-    again = client.post(f"/api/jobs/{created['job_id']}/resolve")
+    again = client.post(f"/api/jobs/{job.job_id}/resolve")
     assert again.status_code == 200
     assert again.json()["tracks"] == body["tracks"]
 
@@ -196,14 +202,15 @@ def test_delete_job_removes_from_list(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     client = TestClient(BuildTestApp().build(tmp_path))
-    created = client.post("/api/jobs", json={"url": "https://youtu.be/abc"}).json()
-    job_id = created["job_id"]
-    deleted = client.delete(f"/api/jobs/{job_id}")
+    store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
+    job = store.create("https://youtu.be/abc")
+    store.save(replace(job, status=JobStatus.COMPLETED))
+    deleted = client.delete(f"/api/jobs/{job.job_id}")
     assert deleted.status_code == 200
     assert deleted.json()["ok"] is True
     listed = client.get("/api/jobs")
     assert listed.json()["jobs"] == []
-    missing = client.get(f"/api/jobs/{job_id}")
+    missing = client.get(f"/api/jobs/{job.job_id}")
     assert missing.status_code == 404
 
 

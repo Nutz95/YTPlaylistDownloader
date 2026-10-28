@@ -9,6 +9,7 @@ from ytpd.jobs.job_download_transcode_coordinator import (
 from ytpd.jobs.job_match_stack import JobMatchStack
 from ytpd.jobs.job_orchestrator import JobOrchestrator
 from ytpd.jobs.job_pipeline_runner import JobPipelineRunner
+from ytpd.jobs.job_queue_next_picker import JobQueueNextPicker
 from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_store import JobStore
 from ytpd.jobs.job_transcode_stack import JobTranscodeStack
@@ -62,4 +63,5 @@ class JobOrchestratorStack:
             self.orchestrator,
             match_stack.request_aborter,
             JobCancelFinalizer(job_store),
+            JobQueueNextPicker(),
         )

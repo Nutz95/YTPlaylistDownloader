@@ -30,29 +30,23 @@ from tests.fakes.fake_transcode_backend import FakeTranscodeBackend
 from tests.fakes.fake_youtube_search_client import FakeYoutubeSearchClient
 from tests.fakes.fake_ytdlp_flat_playlist_client import FakeYtdlpFlatPlaylistClient
 from tests.fakes.fake_ytdlp_video_metadata_client import FakeYtdlpVideoMetadataClient
+from tests.fakes.pipeline_runner_test_stack import PipelineRunnerTestStack
 from ytpd.lmstudio.http_lm_studio_client import HttpLmStudioClient
 from ytpd.lmstudio.lm_studio_settings import LmStudioSettings
 
 
-def test_pipeline_runner_starts_immediately_and_completes(tmp_path: Path) -> None:
+def _build_stack(
+    tmp_path: Path,
+    playlist_entries: dict[str, list[YtdlpFlatEntry]],
+    download_ids: set[str],
+) -> PipelineRunnerTestStack:
     store = JobStore(SqliteJobCheckpointStore(tmp_path / "jobs.db"))
     work = tmp_path / "work"
     dest = tmp_path / "out"
     paths = TrackArtifactPaths(work, dest)
-    entries = {
-        "https://www.youtube.com/playlist?list=demo": [
-            YtdlpFlatEntry(
-                video_id="v1",
-                title="One",
-                uploader="Artist",
-                duration_sec=10,
-                webpage_url="https://youtu.be/v1",
-            ),
-        ]
-    }
     resolve_stack = JobResolveStack(
         store,
-        FakeYtdlpFlatPlaylistClient(entries),
+        FakeYtdlpFlatPlaylistClient(playlist_entries),
         FakeDeezerApiClient({}),
         FakeYtdlpVideoMetadataClient({}),
     )
@@ -88,7 +82,7 @@ def test_pipeline_runner_starts_immediately_and_completes(tmp_path: Path) -> Non
         store,
         work,
         dest,
-        FakeMediaDownloader(paths, {"v1"}),
+        FakeMediaDownloader(paths, download_ids),
         max_workers=1,
         cancel_flag=cancel_flag,
     )
@@ -112,16 +106,100 @@ def test_pipeline_runner_starts_immediately_and_completes(tmp_path: Path) -> Non
         catalog,
         cancel_flag,
     )
-    job = store.create("https://www.youtube.com/playlist?list=demo")
-    started = stack.pipeline_runner.start(job.job_id)
-    assert started.status is JobStatus.RUNNING
-    deadline = time.time() + 10.0
+    return PipelineRunnerTestStack(store=store, stack=stack)
+
+
+def _wait_idle(stack: JobOrchestratorStack, timeout_sec: float = 10.0) -> None:
+    deadline = time.time() + timeout_sec
     while time.time() < deadline and stack.pipeline_runner.is_busy():
         time.sleep(0.05)
     assert stack.pipeline_runner.is_busy() is False
-    finished = store.get(job.job_id)
+
+
+def test_pipeline_runner_starts_immediately_and_completes(tmp_path: Path) -> None:
+    url = "https://www.youtube.com/playlist?list=demo"
+    entries = {
+        url: [
+            YtdlpFlatEntry(
+                video_id="v1",
+                title="One",
+                uploader="Artist",
+                duration_sec=10,
+                webpage_url="https://youtu.be/v1",
+            ),
+        ]
+    }
+    harness = _build_stack(tmp_path, entries, {"v1"})
+    job = harness.store.create(url)
+    started = harness.stack.pipeline_runner.start(job.job_id)
+    assert started.status is JobStatus.RUNNING
+    _wait_idle(harness.stack)
+    finished = harness.store.get(job.job_id)
     assert finished is not None
     assert finished.status is JobStatus.COMPLETED
     assert finished.pipeline_stage is None
     assert finished.tracks[0].phase is TrackPhase.DONE
     assert finished.tracks[0].source_kind is SourceKind.YOUTUBE_PLAYLIST
+
+
+def test_pipeline_runner_drains_queued_job_when_first_completes(tmp_path: Path) -> None:
+    url_a = "https://www.youtube.com/playlist?list=a"
+    url_b = "https://www.youtube.com/playlist?list=b"
+    entries = {
+        url_a: [
+            YtdlpFlatEntry(
+                video_id="va",
+                title="A",
+                uploader="Artist",
+                duration_sec=10,
+                webpage_url="https://youtu.be/va",
+            ),
+        ],
+        url_b: [
+            YtdlpFlatEntry(
+                video_id="vb",
+                title="B",
+                uploader="Artist",
+                duration_sec=10,
+                webpage_url="https://youtu.be/vb",
+            ),
+        ],
+    }
+    harness = _build_stack(tmp_path, entries, {"va", "vb"})
+    first = harness.store.create(url_a)
+    second = harness.store.create(url_b)
+    harness.stack.pipeline_runner.start(first.job_id)
+    _wait_idle(harness.stack)
+    finished_first = harness.store.get(first.job_id)
+    finished_second = harness.store.get(second.job_id)
+    assert finished_first is not None
+    assert finished_second is not None
+    assert finished_first.status is JobStatus.COMPLETED
+    assert finished_second.status is JobStatus.COMPLETED
+    assert finished_second.tracks[0].phase is TrackPhase.DONE
+
+
+def test_drain_queue_starts_interrupted_job_when_idle(tmp_path: Path) -> None:
+    url = "https://www.youtube.com/playlist?list=resume"
+    entries = {
+        url: [
+            YtdlpFlatEntry(
+                video_id="vr",
+                title="R",
+                uploader="Artist",
+                duration_sec=10,
+                webpage_url="https://youtu.be/vr",
+            ),
+        ]
+    }
+    harness = _build_stack(tmp_path, entries, {"vr"})
+    job = harness.store.create(url)
+    harness.store.save(job.with_status(JobStatus.INTERRUPTED))
+    started = harness.stack.pipeline_runner.drain_queue()
+    assert started is not None
+    assert started.job_id == job.job_id
+    assert started.status is JobStatus.RUNNING
+    _wait_idle(harness.stack)
+    finished = harness.store.get(job.job_id)
+    assert finished is not None
+    assert finished.status is JobStatus.COMPLETED

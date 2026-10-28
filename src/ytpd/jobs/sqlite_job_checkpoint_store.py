@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from sqlalchemy import create_engine, delete, select
+from sqlalchemy import create_engine, delete, literal_column, select
 from sqlalchemy.dialects.sqlite import insert
 
 from ytpd.domain.job_snapshot import JobSnapshot
@@ -48,7 +48,7 @@ class SqliteJobCheckpointStore:
     def list_jobs(self) -> list[JobSnapshot]:
         """Return all stored jobs ordered by insertion rowid."""
         statement = select(self._table.table.c.payload_json).order_by(
-            self._table.table.c.job_id.asc()
+            literal_column("rowid").asc()
         )
         with self._engine.connect() as connection:
             rows = connection.execute(statement).fetchall()

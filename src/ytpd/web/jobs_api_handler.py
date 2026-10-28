@@ -7,6 +7,7 @@ from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.jobs.job_delete_service import JobDeleteService
 from ytpd.jobs.job_download_service import JobDownloadService
 from ytpd.jobs.job_match_service import JobMatchService
+from ytpd.jobs.job_not_found_error import JobNotFoundError
 from ytpd.jobs.job_pipeline_runner import JobPipelineRunner
 from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_resume_plan_codec import JobResumePlanCodec
@@ -18,6 +19,7 @@ from ytpd.jobs.job_track_youtube_override_service import (
     JobTrackYoutubeOverrideService,
 )
 from ytpd.jobs.job_transcode_service import JobTranscodeService
+from ytpd.jobs.pipeline_busy_error import PipelineBusyError
 from ytpd.web.job_list_item_codec import JobListItemCodec
 
 
@@ -52,7 +54,7 @@ class JobsApiHandler:
         self._resume_codec = JobResumePlanCodec()
 
     async def create_job(self, request: Request) -> JSONResponse:
-        """Create a queued job from a JSON ``url`` field."""
+        """Create a queued job and drain the FIFO so it starts when the runner is free."""
         body = await request.json()
         if not isinstance(body, Mapping):
             return JSONResponse(
@@ -69,10 +71,13 @@ class JobsApiHandler:
             snapshot = self._job_store.create(raw_url)
         except InvalidJobError as error:
             return JSONResponse(status_code=400, content={"error": str(error)})
-        return JSONResponse(
-            status_code=201,
-            content=self._codec.to_payload(snapshot),
+        started = self._pipeline_runner.drain_queue()
+        ours_started = started is not None and started.job_id == snapshot.job_id
+        payload = dict(
+            self._codec.to_payload(started if ours_started else snapshot)
         )
+        payload["started"] = ours_started
+        return JSONResponse(status_code=201, content=payload)
 
     async def list_jobs(self) -> JSONResponse:
         """Return lightweight job summaries (no track bodies)."""
@@ -99,13 +104,13 @@ class JobsApiHandler:
         body = dict(self._resume_codec.to_payload(plan))
         try:
             self._pipeline_runner.start(job_id)
+        except PipelineBusyError as error:
+            body["started"] = False
+            return JSONResponse(status_code=409, content={**body, "error": str(error)})
+        except JobNotFoundError as error:
+            return JSONResponse(status_code=404, content={"error": str(error)})
         except InvalidJobError as error:
-            message = str(error)
-            if message == "a pipeline is already running":
-                body["started"] = False
-                return JSONResponse(status_code=409, content={**body, "error": message})
-            status_code = 404 if message == "job not found" else 400
-            return JSONResponse(status_code=status_code, content={"error": message})
+            return JSONResponse(status_code=400, content={"error": str(error)})
         body["started"] = True
         return JSONResponse(content=body)
 
@@ -114,9 +119,8 @@ class JobsApiHandler:
         try:
             snapshot = self._resolve_service.resolve_job(job_id)
         except InvalidJobError as error:
-            message = str(error)
-            status_code = 404 if message == "job not found" else 400
-            return JSONResponse(status_code=status_code, content={"error": message})
+            status_code = 404 if "not found" in str(error) else 400
+            return JSONResponse(status_code=status_code, content={"error": str(error)})
         return JSONResponse(content=self._codec.to_payload(snapshot))
 
     def match_job(self, job_id: str) -> JSONResponse:
@@ -124,9 +128,8 @@ class JobsApiHandler:
         try:
             snapshot = self._match_service.match_job(job_id)
         except InvalidJobError as error:
-            message = str(error)
-            status_code = 404 if message == "job not found" else 400
-            return JSONResponse(status_code=status_code, content={"error": message})
+            status_code = 404 if "not found" in str(error) else 400
+            return JSONResponse(status_code=status_code, content={"error": str(error)})
         return JSONResponse(content=self._codec.to_payload(snapshot))
 
     def download_job(self, job_id: str) -> JSONResponse:
@@ -134,9 +137,8 @@ class JobsApiHandler:
         try:
             snapshot = self._download_service.download_job(job_id)
         except InvalidJobError as error:
-            message = str(error)
-            status_code = 404 if message == "job not found" else 400
-            return JSONResponse(status_code=status_code, content={"error": message})
+            status_code = 404 if "not found" in str(error) else 400
+            return JSONResponse(status_code=status_code, content={"error": str(error)})
         return JSONResponse(content=self._codec.to_payload(snapshot))
 
     def transcode_job(self, job_id: str) -> JSONResponse:
@@ -144,24 +146,20 @@ class JobsApiHandler:
         try:
             snapshot = self._transcode_service.transcode_job(job_id)
         except InvalidJobError as error:
-            message = str(error)
-            status_code = 404 if message == "job not found" else 400
-            return JSONResponse(status_code=status_code, content={"error": message})
+            status_code = 404 if "not found" in str(error) else 400
+            return JSONResponse(status_code=status_code, content={"error": str(error)})
         return JSONResponse(content=self._codec.to_payload(snapshot))
 
     def run_job(self, job_id: str) -> JSONResponse:
         """Start the full pipeline in the background and return immediately."""
         try:
             snapshot = self._pipeline_runner.start(job_id)
+        except PipelineBusyError as error:
+            return JSONResponse(status_code=409, content={"error": str(error)})
+        except JobNotFoundError as error:
+            return JSONResponse(status_code=404, content={"error": str(error)})
         except InvalidJobError as error:
-            message = str(error)
-            if message == "job not found":
-                status_code = 404
-            elif message == "a pipeline is already running":
-                status_code = 409
-            else:
-                status_code = 400
-            return JSONResponse(status_code=status_code, content={"error": message})
+            return JSONResponse(status_code=400, content={"error": str(error)})
         body = dict(self._codec.to_payload(snapshot))
         body["started"] = True
         return JSONResponse(content=body)
@@ -183,12 +181,8 @@ class JobsApiHandler:
         try:
             self._delete_service.delete(job_id)
         except InvalidJobError as error:
-            message = str(error)
-            if message == "job not found":
-                status_code = 404
-            else:
-                status_code = 409
-            return JSONResponse(status_code=status_code, content={"error": message})
+            status_code = 404 if "not found" in str(error) else 409
+            return JSONResponse(status_code=status_code, content={"error": str(error)})
         return JSONResponse(content={"ok": True, "job_id": job_id})
 
     def retry_failed_job(self, job_id: str) -> JSONResponse:
@@ -196,15 +190,12 @@ class JobsApiHandler:
         try:
             prepared = self._retry_failed_service.retry_failed(job_id)
             started = self._pipeline_runner.start(prepared.job_id)
+        except PipelineBusyError as error:
+            return JSONResponse(status_code=409, content={"error": str(error)})
+        except JobNotFoundError as error:
+            return JSONResponse(status_code=404, content={"error": str(error)})
         except InvalidJobError as error:
-            message = str(error)
-            if message == "job not found":
-                status_code = 404
-            elif message == "a pipeline is already running":
-                status_code = 409
-            else:
-                status_code = 409
-            return JSONResponse(status_code=status_code, content={"error": message})
+            return JSONResponse(status_code=409, content={"error": str(error)})
         body = dict(self._codec.to_payload(started))
         body["started"] = True
         body["retried"] = True
@@ -232,15 +223,13 @@ class JobsApiHandler:
         try:
             prepared = self._youtube_override_service.apply(job_id, track_id, raw_url)
             started = self._pipeline_runner.start(prepared.job_id)
+        except PipelineBusyError as error:
+            return JSONResponse(status_code=409, content={"error": str(error)})
+        except JobNotFoundError as error:
+            return JSONResponse(status_code=404, content={"error": str(error)})
         except InvalidJobError as error:
-            message = str(error)
-            if message == "job not found" or message == "track not found":
-                status_code = 404
-            elif message == "a pipeline is already running":
-                status_code = 409
-            else:
-                status_code = 400
-            return JSONResponse(status_code=status_code, content={"error": message})
+            status_code = 404 if "not found" in str(error) else 400
+            return JSONResponse(status_code=status_code, content={"error": str(error)})
         payload = dict(self._codec.to_payload(started))
         payload["started"] = True
         payload["overridden"] = True

@@ -39,6 +39,30 @@ def test_save_load_preserves_tracks(tmp_path: Path) -> None:
     assert loaded.tracks[0].youtube_url == "https://youtu.be/abc"
 
 
+def test_list_jobs_preserves_insertion_order(tmp_path: Path) -> None:
+    store = SqliteJobCheckpointStore(tmp_path / "jobs.db")
+    first = JobSnapshot(
+        job_id="zzzz-later-uuid",
+        source_url="https://youtu.be/first",
+        source_kind=SourceKind.YOUTUBE_VIDEO,
+        status=JobStatus.QUEUED,
+        tracks=[],
+        error_message=None,
+    )
+    second = JobSnapshot(
+        job_id="aaaa-earlier-uuid",
+        source_url="https://youtu.be/second",
+        source_kind=SourceKind.YOUTUBE_VIDEO,
+        status=JobStatus.QUEUED,
+        tracks=[],
+        error_message=None,
+    )
+    store.save(first)
+    store.save(second)
+    listed = store.list_jobs()
+    assert [job.job_id for job in listed] == [first.job_id, second.job_id]
+
+
 def test_delete_removes_job(tmp_path: Path) -> None:
     store = SqliteJobCheckpointStore(tmp_path / "jobs.db")
     snapshot = JobSnapshot(
