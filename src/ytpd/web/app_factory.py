@@ -83,7 +83,7 @@ class AppFactory:
         return app
 
     def _register_routes(self, app: FastAPI, templates: Jinja2Templates) -> None:
-        index_handler = IndexHandler(templates, self._config)
+        index_handler = IndexHandler(templates, self._config_store)
         config_handler = ConfigApiHandler(self._config_store)
         jobs_handler = self._jobs_handler()
         progress_handler = ProgressApiHandler(
@@ -95,6 +95,11 @@ class AppFactory:
         app.add_api_route("/", index_handler.handle, methods=["GET"])
         app.add_api_route("/api/config", config_handler.get_config, methods=["GET"])
         app.add_api_route("/api/config", config_handler.put_config, methods=["PUT"])
+        app.add_api_route(
+            "/api/config/ui-locale",
+            config_handler.put_ui_locale,
+            methods=["PUT"],
+        )
         self._register_job_routes(app, jobs_handler)
         app.add_api_route(
             "/api/jobs/{job_id}/progress",

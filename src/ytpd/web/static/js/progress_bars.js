@@ -9,6 +9,7 @@
   const selection = window.YtpdJobSelection;
   const overrideApi = window.YtpdYoutubeOverrideApi;
   const failureCopy = window.YtpdFailureCopy;
+  const i18n = window.YtpdI18n;
   if (
     !jobSelect ||
     !watchButton ||
@@ -26,10 +27,14 @@
 
   let timerId = 0;
 
+  function t(key) {
+    return i18n ? i18n.t(key) : key;
+  }
+
   async function overrideFailedTrackYoutube(trackId, youtubeUrl) {
     const jobId = jobSelect.value.trim() || selection.getSelectedJobId();
     if (!jobId) {
-      label.textContent = "Select a saved job first.";
+      label.textContent = t("progress.select.first");
       return;
     }
     const result = await overrideApi.applyAndAnnounce(
@@ -50,7 +55,7 @@
     jobSelect.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "— select a saved job —";
+    placeholder.textContent = t("progress.select.placeholder");
     jobSelect.appendChild(placeholder);
     jobs.forEach((job) => {
       const option = document.createElement("option");
@@ -101,11 +106,11 @@
     appendActiveCards(
       mediaList,
       snapshot.active_media,
-      stage === "idle" ? "No active media." : "Waiting for the next track checkpoint…"
+      stage === "idle" ? t("progress.active.empty") : t("progress.waiting")
     );
     failureCopy.paintFailureList(failList, snapshot.failed_media || [], {
       card: true,
-      emptyText: "No failures yet.",
+      emptyText: t("progress.fail.empty"),
       onYoutubeOverride: overrideFailedTrackYoutube,
     });
   }
@@ -113,8 +118,8 @@
   async function pollOnce() {
     const jobId = jobSelect.value.trim() || selection.getSelectedJobId();
     if (!jobId) {
-      stageLine.textContent = "No active stage.";
-      label.textContent = "Select a saved job first.";
+      stageLine.textContent = t("progress.stage.none");
+      label.textContent = t("progress.select.first");
       fill.style.width = "0%";
       mediaList.innerHTML = "";
       failList.innerHTML = "";
@@ -122,8 +127,8 @@
     }
     const response = await fetch(`/api/jobs/${jobId}/progress`);
     if (!response.ok) {
-      stageLine.textContent = "No active stage.";
-      label.textContent = "Job not found.";
+      stageLine.textContent = t("progress.stage.none");
+      label.textContent = t("progress.job.missing");
       fill.style.width = "0%";
       mediaList.innerHTML = "";
       failList.innerHTML = "";
@@ -182,5 +187,13 @@
       jobSelect.value = jobId;
     }
     startWatch();
+  });
+
+  window.addEventListener("ytpd-locale-changed", () => {
+    const placeholder = jobSelect.querySelector('option[value=""]');
+    if (placeholder) {
+      placeholder.textContent = t("progress.select.placeholder");
+    }
+    pollOnce();
   });
 })();

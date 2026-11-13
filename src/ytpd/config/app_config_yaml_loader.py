@@ -62,6 +62,9 @@ class AppConfigYamlLoader:
         ffmpeg_path = loaded.get("ffmpeg_path", "")
         if not isinstance(ffmpeg_path, str):
             raise InvalidAppConfigError("ffmpeg_path must be a string")
+        ui_locale = loaded.get("ui_locale", "en")
+        if not isinstance(ui_locale, str) or ui_locale.strip() == "":
+            raise InvalidAppConfigError("ui_locale must be a non-empty string")
         return {
             "bind_host": bind_host,
             "bind_port": bind_port,
@@ -73,4 +76,5 @@ class AppConfigYamlLoader:
             "youtube_cookies_from_browser": cookies_browser,
             "youtube_cookies_file": cookies_file,
             "ffmpeg_path": ffmpeg_path,
+            "ui_locale": ui_locale,
         }

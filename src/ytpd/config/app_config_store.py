@@ -43,6 +43,7 @@ class AppConfigStore:
             youtube_cookies_from_browser=config.youtube_cookies_from_browser,
             youtube_cookies_file=config.youtube_cookies_file,
             ffmpeg_path=config.ffmpeg_path,
+            ui_locale=config.ui_locale,
         )
         self._writable_path.parent.mkdir(parents=True, exist_ok=True)
         document = self.to_document(normalized)
@@ -74,6 +75,7 @@ class AppConfigStore:
             "youtube_cookies_from_browser": config.youtube_cookies_from_browser,
             "youtube_cookies_file": config.youtube_cookies_file,
             "ffmpeg_path": config.ffmpeg_path,
+            "ui_locale": config.ui_locale.value,
         }
 
     def _read_packaged_default(self) -> str:

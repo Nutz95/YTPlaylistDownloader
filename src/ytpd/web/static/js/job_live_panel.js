@@ -6,6 +6,7 @@
   const selection = window.YtpdJobSelection;
   const overrideApi = window.YtpdYoutubeOverrideApi;
   const failureCopy = window.YtpdFailureCopy;
+  const i18n = window.YtpdI18n;
   if (
     !liveLabel ||
     !liveList ||
@@ -19,11 +20,15 @@
 
   let liveTimerId = 0;
 
+  function t(key) {
+    return i18n ? i18n.t(key) : key;
+  }
+
   async function overrideFailedTrackYoutube(trackId, youtubeUrl) {
     const jobId = selection.getSelectedJobId();
     if (!jobId) {
       if (status) {
-        status.textContent = "Select a job first.";
+        status.textContent = t("job.status.select.first");
       }
       return;
     }
@@ -47,7 +52,7 @@
   }
 
   function paintLive(snapshot) {
-    liveLabel.textContent = snapshot.label || "No active work.";
+    liveLabel.textContent = snapshot.label || t("job.live.none");
     liveList.innerHTML = "";
     (snapshot.active_media || []).forEach((media) => {
       const item = document.createElement("li");
@@ -59,13 +64,13 @@
     if ((snapshot.active_media || []).length === 0) {
       const empty = document.createElement("li");
       empty.className = "hint";
-      empty.textContent = "No track in flight right now.";
+      empty.textContent = t("job.live.empty");
       liveList.appendChild(empty);
     }
     failureCopy.paintFailureList(failList, snapshot.failed_media || [], {
       card: false,
       limit: 12,
-      emptyText: "No failures yet.",
+      emptyText: t("job.fail.empty"),
       onYoutubeOverride: overrideFailedTrackYoutube,
     });
   }
@@ -73,7 +78,7 @@
   async function pollLiveOnce() {
     const jobId = selection.getSelectedJobId();
     if (!jobId) {
-      liveLabel.textContent = "No active work.";
+      liveLabel.textContent = t("job.live.none");
       liveList.innerHTML = "";
       failList.innerHTML = "";
       return;
@@ -104,7 +109,7 @@
   }
 
   function clearLive() {
-    liveLabel.textContent = "No active work.";
+    liveLabel.textContent = t("job.live.none");
     liveList.innerHTML = "";
     failList.innerHTML = "";
   }
@@ -119,5 +124,8 @@
   });
   window.addEventListener("ytpd-job-selected", () => {
     startLiveWatch();
+  });
+  window.addEventListener("ytpd-locale-changed", () => {
+    pollLiveOnce();
   });
 })();

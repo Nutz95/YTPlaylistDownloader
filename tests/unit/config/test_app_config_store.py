@@ -6,6 +6,7 @@ from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.invalid_app_config_error import InvalidAppConfigError
 from ytpd.config.path_validator import PathValidator
+from ytpd.domain.ui_locale import UiLocale
 
 
 def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -13,7 +14,7 @@ def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.Monk
     writable = tmp_path / "config" / "app.yaml"
     store = AppConfigStore(writable, PathValidator())
     saved = store.save(
-        AppConfig(
+            AppConfig(
             host="127.0.0.1",
             port=8765,
             work_dir=Path("work_data"),
@@ -24,6 +25,7 @@ def test_save_and_reload_persists_paths(tmp_path: Path, monkeypatch: pytest.Monk
             youtube_cookies_from_browser="brave",
             youtube_cookies_file="config/youtube_cookies.txt",
             ffmpeg_path="",
+            ui_locale=UiLocale.EN,
         )
     )
     assert writable.is_file()
@@ -65,6 +67,7 @@ def test_cookies_default_from_packaged_yaml_when_missing(
     assert loaded.youtube_cookies_from_browser == "brave"
     assert loaded.youtube_cookies_file == ""
     assert loaded.ffmpeg_path == ""
+    assert loaded.ui_locale == UiLocale.EN
 
 
 def test_rejects_empty_host() -> None:

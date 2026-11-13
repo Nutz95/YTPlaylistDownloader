@@ -2,15 +2,30 @@
   const refreshButton = document.getElementById("catalogue-refresh");
   const status = document.getElementById("catalogue-status");
   const list = document.getElementById("catalogue-list");
+  const i18n = window.YtpdI18n;
   if (!refreshButton || !status || !list) {
     return;
   }
 
+  const statusBind = i18n ? i18n.bindStatus(status) : null;
+
+  function t(key, vars) {
+    return i18n ? i18n.t(key, vars) : key;
+  }
+
+  function showStatus(key, vars) {
+    if (statusBind) {
+      statusBind.set(key, vars);
+      return;
+    }
+    status.textContent = t(key, vars);
+  }
+
   async function refreshCatalogue() {
-    status.textContent = "Loading catalogue…";
+    showStatus("catalogue.status.loading");
     const response = await fetch("/api/catalog");
     if (!response.ok) {
-      status.textContent = "Failed to load catalogue.";
+      showStatus("catalogue.status.failed");
       return;
     }
     const body = await response.json();
@@ -19,9 +34,9 @@
     if (entries.length === 0) {
       const empty = document.createElement("li");
       empty.className = "hint";
-      empty.textContent = "No finished MP3 files yet.";
+      empty.textContent = t("catalogue.empty");
       list.appendChild(empty);
-      status.textContent = "Catalogue empty.";
+      showStatus("catalogue.status.empty");
       return;
     }
     entries.forEach((entry) => {
@@ -29,7 +44,7 @@
       item.textContent = `${entry.artist} — ${entry.title} → ${entry.output_path}`;
       list.appendChild(item);
     });
-    status.textContent = `${entries.length} catalogue entries.`;
+    showStatus("catalogue.status.count", { count: entries.length });
   }
 
   refreshButton.addEventListener("click", () => {
@@ -40,5 +55,13 @@
     if (event.detail && event.detail.tab === "catalogue") {
       refreshCatalogue();
     }
+  });
+
+  window.addEventListener("ytpd-locale-changed", () => {
+    if (list.children.length > 0) {
+      refreshCatalogue();
+      return;
+    }
+    showStatus("catalogue.status.idle");
   });
 })();

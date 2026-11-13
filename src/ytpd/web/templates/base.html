@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ ui_locale|default('en') }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>{% block title %}YTPlaylistDownloader{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/tokens.css">
   <link rel="stylesheet" href="/static/css/base.css">
   <link rel="stylesheet" href="/static/css/tabs.css">
@@ -15,7 +18,18 @@
 </head>
 <body>
   <header class="site-header">
-    <h1>YTPlaylistDownloader</h1>
+    <div class="site-header-row">
+      <h1>YTPlaylistDownloader</h1>
+      <label class="locale-switch">
+        <span class="visually-hidden" data-i18n="locale.label">Language</span>
+        <select id="ui-locale" aria-label="Language">
+          {% set locale_labels = {'en': 'English', 'fr': 'Français'} %}
+          {% for code in ui_locales|default(['en', 'fr']) %}
+          <option value="{{ code }}"{% if ui_locale|default('en') == code %} selected{% endif %}>{{ locale_labels.get(code, code) }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
   </header>
   <main>
     {% block content %}{% endblock %}

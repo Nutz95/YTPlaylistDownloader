@@ -11,6 +11,7 @@
   const jobList = document.getElementById("job-list");
   const selection = window.YtpdJobSelection;
   const livePanel = window.YtpdJobLivePanel;
+  const i18n = window.YtpdI18n;
   if (
     !urlInput ||
     !createButton ||
@@ -29,9 +30,42 @@
   }
 
   let latestJobs = [];
-  let statusOverride = "";
+  let statusOverride = null;
   let lastProgressKey = "";
   const terminalStatuses = new Set(["completed", "failed", "cancelled"]);
+  const statusBind = i18n ? i18n.bindStatus(status) : null;
+
+  function t(key, vars) {
+    return i18n ? i18n.t(key, vars) : key;
+  }
+
+  function showStatus(key, vars) {
+    if (statusBind) {
+      statusBind.set(key, vars);
+      return;
+    }
+    status.textContent = t(key, vars);
+  }
+
+  function showRawStatus(text) {
+    statusOverride = null;
+    if (statusBind) {
+      statusBind.clear();
+    }
+    status.textContent = text;
+  }
+
+  function setStatusOverride(key, vars) {
+    statusOverride = { key, vars: vars || null };
+    showStatus(key, vars);
+  }
+
+  function clearStatusOverride() {
+    statusOverride = null;
+    if (statusBind) {
+      statusBind.clear();
+    }
+  }
 
   function canDeleteJob(job) {
     return job && job.status !== "running";
@@ -56,7 +90,7 @@
     if (latestJobs.length === 0) {
       const empty = document.createElement("li");
       empty.className = "hint";
-      empty.textContent = "No saved jobs yet.";
+      empty.textContent = t("job.empty");
       jobList.appendChild(empty);
       return;
     }
@@ -87,17 +121,18 @@
         button.append(title, meta);
       }
       button.addEventListener("click", () => {
-        statusOverride = "";
+        clearStatusOverride();
         selection.setSelectedJobId(job.job_id);
       });
       item.appendChild(button);
       if (canDeleteJob(job)) {
+        const shortId = selection.shortId(job.job_id);
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "job-list-delete";
-        remove.textContent = "Supprimer";
-        remove.title = "Supprimer ce job";
-        remove.setAttribute("aria-label", `Supprimer le job ${selection.shortId(job.job_id)}`);
+        remove.textContent = t("job.delete");
+        remove.title = t("job.delete.title");
+        remove.setAttribute("aria-label", t("job.delete.aria", { id: shortId }));
         remove.addEventListener("click", (event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -118,6 +153,9 @@
     urlInput.value = "";
     trackList.innerHTML = "";
     livePanel.clearLive();
+    if (!statusOverride) {
+      showStatus("job.status.none");
+    }
   }
 
   async function readJsonBody(response) {
@@ -132,18 +170,17 @@
     if (!jobId) {
       return;
     }
-    statusOverride = "";
-    status.textContent = "Deleting job…";
+    clearStatusOverride();
+    showStatus("job.status.deleting");
     const response = await fetch(`/api/jobs/${jobId}`, { method: "DELETE" });
     const body = await readJsonBody(response);
     if (!response.ok) {
-      status.textContent = body.error || "Delete failed.";
+      showRawStatus(body.error || t("job.status.delete.failed"));
       await refreshJobList(false);
       return;
     }
     clearSelectionIfDeleted([jobId]);
-    statusOverride = `Deleted — ${selection.shortId(jobId)}`;
-    status.textContent = statusOverride;
+    setStatusOverride("job.status.deleted", { id: selection.shortId(jobId) });
     await refreshJobList(false);
   }
 
@@ -151,29 +188,28 @@
     if (deleteCompletedButton.disabled) {
       return;
     }
-    const confirmed = window.confirm(
-      "Supprimer tous les jobs terminés (completed) ? Les MP3 restent dans le dossier de sortie."
-    );
+    const confirmed = window.confirm(t("job.confirm.delete.completed"));
     if (!confirmed) {
       return;
     }
     deleteCompletedButton.disabled = true;
-    statusOverride = "";
-    status.textContent = "Deleting completed jobs…";
+    clearStatusOverride();
+    showStatus("job.status.deleting.completed");
     try {
       const response = await fetch("/api/jobs/completed", { method: "DELETE" });
       const body = await readJsonBody(response);
       if (!response.ok) {
-        status.textContent = body.error || "Delete completed failed.";
+        showRawStatus(body.error || t("job.status.delete.completed.failed"));
         return;
       }
       const deletedIds = Array.isArray(body.deleted_job_ids) ? body.deleted_job_ids : [];
       clearSelectionIfDeleted(deletedIds);
       const count = typeof body.deleted_count === "number" ? body.deleted_count : deletedIds.length;
-      statusOverride = count === 0
-        ? "No completed jobs to delete."
-        : `Deleted ${count} completed job${count === 1 ? "" : "s"}`;
-      status.textContent = statusOverride;
+      if (count === 0) {
+        setStatusOverride("job.status.none.completed");
+      } else {
+        setStatusOverride("job.status.deleted.completed", { count });
+      }
     } finally {
       deleteCompletedButton.disabled = false;
       await refreshJobList(false);
@@ -197,7 +233,9 @@
     });
     if ((job.tracks || []).length > preview.length) {
       const more = document.createElement("li");
-      more.textContent = `… +${job.tracks.length - preview.length} more tracks`;
+      more.textContent = t("job.status.more.tracks", {
+        count: job.tracks.length - preview.length,
+      });
       trackList.appendChild(more);
     }
   }
@@ -205,17 +243,22 @@
   function paintSelectedSummary(job) {
     urlInput.value = job.source_url;
     if (statusOverride) {
-      status.textContent = statusOverride;
+      showStatus(statusOverride.key, statusOverride.vars || undefined);
       return;
     }
     const trackCount = job.track_count != null ? job.track_count : (job.tracks || []).length;
-    status.textContent = `Selected ${selection.shortId(job.job_id)} — ${job.status} — ${job.source_kind} — ${trackCount} tracks`;
+    showStatus("job.status.selected", {
+      id: selection.shortId(job.job_id),
+      status: job.status,
+      kind: job.source_kind,
+      count: trackCount,
+    });
   }
 
   async function loadJobDetail(jobId) {
     const response = await fetch(`/api/jobs/${jobId}`);
     if (!response.ok) {
-      status.textContent = "Failed to load job detail.";
+      showStatus("job.status.load.detail.failed");
       return;
     }
     const job = await response.json();
@@ -227,12 +270,12 @@
   async function refreshJobList(autoSelect) {
     const response = await fetch("/api/jobs");
     if (!response.ok) {
-      status.textContent = "Failed to load jobs.";
+      showStatus("job.status.load.failed");
       return;
     }
     const body = await response.json();
     if (!Array.isArray(body.jobs)) {
-      status.textContent = "Jobs API returned an invalid payload.";
+      showStatus("job.status.invalid");
       return;
     }
     latestJobs = body.jobs;
@@ -272,7 +315,7 @@
     }
     lastProgressKey = progressKey;
     if (terminalStatuses.has(jobStatus)) {
-      statusOverride = "";
+      clearStatusOverride();
     }
     await refreshJobList(false);
     if (selection.getSelectedJobId() === jobId) {
@@ -280,9 +323,23 @@
     }
   });
 
+  window.addEventListener("ytpd-locale-changed", () => {
+    paintList();
+    if (statusOverride) {
+      showStatus(statusOverride.key, statusOverride.vars || undefined);
+      return;
+    }
+    const jobId = selection.getSelectedJobId();
+    if (jobId) {
+      loadJobDetail(jobId);
+      return;
+    }
+    showStatus("job.status.none");
+  });
+
   createButton.addEventListener("click", async () => {
-    statusOverride = "";
-    status.textContent = "Creating job…";
+    clearStatusOverride();
+    showStatus("job.status.creating");
     const response = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -294,7 +351,7 @@
     });
     const body = await response.json();
     if (!response.ok) {
-      status.textContent = body.error || "Create failed.";
+      showRawStatus(body.error || t("job.status.create.failed"));
       return;
     }
     selection.setSelectedJobId(body.job_id);
@@ -302,31 +359,28 @@
     paintTracks(body);
     await refreshJobList(false);
     if (body.started) {
-      statusOverride = `Pipeline running — ${selection.shortId(body.job_id)} · open Progression for live stage / track`;
-      status.textContent = statusOverride;
+      setStatusOverride("job.status.running", { id: selection.shortId(body.job_id) });
       window.dispatchEvent(
         new CustomEvent("ytpd-pipeline-started", { detail: { jobId: body.job_id } })
       );
     } else {
-      statusOverride = `Queued — ${selection.shortId(body.job_id)} · starts when the current job finishes`;
-      status.textContent = statusOverride;
+      setStatusOverride("job.status.queued", { id: selection.shortId(body.job_id) });
     }
   });
 
   cancelButton.addEventListener("click", async () => {
     const jobId = selection.getSelectedJobId();
     if (!jobId) {
-      status.textContent = "Select a job first.";
+      showStatus("job.status.select.first");
       return;
     }
     const response = await fetch(`/api/jobs/${jobId}/cancel`, { method: "POST" });
     const body = await response.json();
     if (!response.ok) {
-      status.textContent = body.error || "Cancel failed.";
+      showRawStatus(body.error || t("job.status.cancel.failed"));
       return;
     }
-    statusOverride = `Cancelled — ${selection.shortId(body.job_id)} · in-flight work stopped; pending tracks can be resumed`;
-    status.textContent = statusOverride;
+    setStatusOverride("job.status.cancelled", { id: selection.shortId(body.job_id) });
     paintSelectedSummary(body);
     paintTracks(body);
     await refreshJobList(false);
@@ -336,19 +390,18 @@
   retryFailedButton.addEventListener("click", async () => {
     const jobId = selection.getSelectedJobId();
     if (!jobId) {
-      status.textContent = "Select a job first.";
+      showStatus("job.status.select.first");
       return;
     }
-    statusOverride = "";
-    status.textContent = "Retrying failed tracks…";
+    clearStatusOverride();
+    showStatus("job.status.retrying");
     const response = await fetch(`/api/jobs/${jobId}/retry-failed`, { method: "POST" });
     const body = await response.json();
     if (!response.ok) {
-      status.textContent = body.error || "Retry failed.";
+      showRawStatus(body.error || t("job.status.retry.failed"));
       return;
     }
-    statusOverride = `Retrying failures — ${selection.shortId(body.job_id)} · watch Progression / failures.log`;
-    status.textContent = statusOverride;
+    setStatusOverride("job.status.retrying.ok", { id: selection.shortId(body.job_id) });
     paintSelectedSummary(body);
     paintTracks(body);
     await refreshJobList(false);
@@ -360,15 +413,15 @@
   resumeButton.addEventListener("click", async () => {
     const jobId = selection.getSelectedJobId();
     if (!jobId) {
-      status.textContent = "Select a job first.";
+      showStatus("job.status.select.first");
       return;
     }
-    statusOverride = "";
-    status.textContent = "Resuming pipeline…";
+    clearStatusOverride();
+    showStatus("job.status.resuming");
     const response = await fetch(`/api/jobs/${jobId}/resume`, { method: "POST" });
     const body = await response.json();
     if (!response.ok) {
-      status.textContent = body.error || "Resume failed.";
+      showRawStatus(body.error || t("job.status.resume.failed"));
       return;
     }
     const actionCounts = {};
@@ -384,10 +437,17 @@
     const summary = Object.keys(actionCounts)
       .map((key) => `${actionCounts[key]} ${key}`)
       .join(", ");
-    statusOverride = body.started
-      ? `Pipeline resumed — ${summary || "pending work"} · watch Progression`
-      : `Resume plan ready but pipeline already running — ${summary || "no actions"}`;
-    status.textContent = statusOverride;
+    const summaryText = summary
+      || t(
+        body.started
+          ? "job.status.resume.summary.pending"
+          : "job.status.resume.summary.none"
+      );
+    if (body.started) {
+      setStatusOverride("job.status.resumed", { summary: summaryText });
+    } else {
+      setStatusOverride("job.status.resume.busy", { summary: summaryText });
+    }
     await refreshJobList(false);
     paintList();
     window.dispatchEvent(
@@ -396,7 +456,7 @@
   });
 
   refreshButton.addEventListener("click", () => {
-    statusOverride = "";
+    clearStatusOverride();
     refreshJobList(true);
   });
 

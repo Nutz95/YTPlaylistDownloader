@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from ytpd.domain.ui_locale import UiLocale
+
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -16,3 +18,4 @@ class AppConfig:
     youtube_cookies_from_browser: str
     youtube_cookies_file: str
     ffmpeg_path: str
+    ui_locale: UiLocale

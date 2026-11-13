@@ -2,10 +2,10 @@
 {% block title %}{{ page_title }}{% endblock %}
 {% block content %}
   <nav class="tab-nav" role="tablist" aria-label="Main">
-    <button type="button" class="tab-button is-active" role="tab" aria-selected="true" data-tab="job">Job</button>
-    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="progress">Progression</button>
-    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="config">Config</button>
-    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="catalogue">Catalogue</button>
+    <button type="button" class="tab-button is-active" role="tab" aria-selected="true" data-tab="job" data-i18n="nav.job">Job</button>
+    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="progress" data-i18n="nav.progress">Progress</button>
+    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="config" data-i18n="nav.config">Config</button>
+    <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab="catalogue" data-i18n="nav.catalogue">Catalogue</button>
   </nav>
   <section id="tab-job" class="tab-panel is-active" role="tabpanel">
     {% include "tabs/tab_job.html" %}
@@ -21,6 +21,10 @@
   </section>
 {% endblock %}
 {% block scripts %}
+  <script src="/static/js/i18n_messages_en.js" defer></script>
+  <script src="/static/js/i18n_messages_fr.js" defer></script>
+  <script src="/static/js/i18n.js" defer></script>
+  <script src="/static/js/locale_switcher.js" defer></script>
   <script src="/static/js/tabs.js" defer></script>
   <script src="/static/js/job_selection.js" defer></script>
   <script src="/static/js/failure_copy.js" defer></script>

@@ -1,61 +1,61 @@
-<h2>Job</h2>
-<p>Paste a Deezer playlist, YouTube playlist, or YouTube video URL.</p>
+<h2 data-i18n="job.title">Job</h2>
+<p data-i18n="job.intro">Paste a Deezer playlist, YouTube playlist, or YouTube video URL.</p>
 <label class="field">
-  <span>URL</span>
+  <span data-i18n="job.url">URL</span>
   <textarea id="job-url" rows="3" placeholder="https://..."></textarea>
 </label>
 <fieldset class="field media-mode-field">
-  <legend>Sortie</legend>
-  <div class="media-mode-toggle" role="radiogroup" aria-label="Mode de sortie">
+  <legend data-i18n="job.output">Output</legend>
+  <div class="media-mode-toggle" role="radiogroup" data-i18n-aria-label="job.output.aria" aria-label="Output mode">
     <label class="media-mode-option">
       <input type="radio" name="job-media-mode" value="audio" checked>
-      <span>Audio (MP3)</span>
+      <span data-i18n="job.mode.audio">Audio (MP3)</span>
     </label>
     <label class="media-mode-option">
       <input type="radio" name="job-media-mode" value="video">
-      <span>Vidéo (meilleure qualité)</span>
+      <span data-i18n="job.mode.video">Video (best quality)</span>
     </label>
   </div>
-  <p class="hint">Audio : extrait la piste sonore et encode en MP3. Vidéo : télécharge le fichier vidéo complet en meilleure qualité et le copie tel quel (MP4) dans le dossier de sortie — pas d’extraction audio, pas de découpe chapitres.</p>
+  <p class="hint" data-i18n="job.mode.hint">Audio: extract the soundtrack and encode as MP3. Video: download the full video at best quality and copy it as-is (MP4) into the output folder — no audio extract, no chapter split.</p>
   <label class="media-mode-option force-reprocess-option">
     <input type="checkbox" id="job-force-reprocess">
-    <span>Forcer le retraitement (ignorer catalogue / fichier déjà présent)</span>
+    <span data-i18n="job.force">Force reprocess (ignore catalogue / file already present)</span>
   </label>
 </fieldset>
 <div class="job-actions-groups">
   <section class="job-action-group" aria-labelledby="job-group-create">
-    <h3 id="job-group-create">1 · Create</h3>
-    <p class="hint">Creates the job and starts it immediately, or queues it if another pipeline is already running. Queued jobs start automatically when the current one finishes. After an app restart, interrupted / queued jobs resume on their own.</p>
+    <h3 id="job-group-create" data-i18n="job.group.create">1 · Create</h3>
+    <p class="hint" data-i18n="job.group.create.hint">Creates the job and starts it immediately, or queues it if another pipeline is already running. Queued jobs start automatically when the current one finishes. After an app restart, interrupted / queued jobs resume on their own.</p>
     <div class="job-actions">
-      <button type="button" id="job-create">Create job</button>
-      <button type="button" id="job-refresh-list">Refresh jobs</button>
+      <button type="button" id="job-create" data-i18n="job.create">Create job</button>
+      <button type="button" id="job-refresh-list" data-i18n="job.refresh">Refresh jobs</button>
     </div>
   </section>
   <section class="job-action-group" aria-labelledby="job-group-pipeline">
-    <h3 id="job-group-pipeline">2 · Recovery</h3>
-    <p class="hint">Resume continues a cancelled / failed / incomplete job that still has pending work (including resolve with no tracks). Retry failures resets match/download errors then restarts — use that after a completed job with failed tracks.</p>
+    <h3 id="job-group-pipeline" data-i18n="job.group.recovery">2 · Recovery</h3>
+    <p class="hint" data-i18n="job.group.recovery.hint">Resume continues a cancelled / failed / incomplete job that still has pending work (including resolve with no tracks). Retry failures resets match/download errors then restarts — use that after a completed job with failed tracks.</p>
     <div class="job-actions">
-      <button type="button" id="job-resume">Resume pipeline</button>
-      <button type="button" id="job-retry-failed">Retry failures</button>
-      <button type="button" id="job-cancel">Cancel</button>
+      <button type="button" id="job-resume" data-i18n="job.resume">Resume pipeline</button>
+      <button type="button" id="job-retry-failed" data-i18n="job.retry">Retry failures</button>
+      <button type="button" id="job-cancel" data-i18n="job.cancel">Cancel</button>
     </div>
-    <p class="hint">Failures are listed below and logged to <code>_work/&lt;job-id&gt;/failures.log</code>.</p>
+    <p class="hint" data-i18n="job.failures.hint">Failures are listed below and logged to _work/&lt;job-id&gt;/failures.log.</p>
   </section>
 </div>
 <section class="job-list-panel" aria-labelledby="job-list-heading">
-  <h3 id="job-list-heading">Saved jobs</h3>
-  <p class="hint">Select a job to inspect tracks. Use Supprimer to drop a finished job, or Supprimer les terminés for every completed job (MP3s in the output folder are kept).</p>
+  <h3 id="job-list-heading" data-i18n="job.list.title">Saved jobs</h3>
+  <p class="hint" data-i18n="job.list.hint">Select a job to inspect tracks. Use Delete to drop a finished job, or Delete completed for every completed job (files in the output folder are kept).</p>
   <div class="job-actions">
-    <button type="button" id="job-delete-completed">Supprimer les terminés</button>
+    <button type="button" id="job-delete-completed" data-i18n="job.delete.completed">Delete completed</button>
   </div>
   <ul id="job-list" class="job-list" aria-live="polite"></ul>
 </section>
-<p class="hint" id="job-status">No job selected.</p>
+<p class="hint" id="job-status" data-i18n="job.status.none">No job selected.</p>
 <section class="job-live-panel" aria-labelledby="job-live-heading">
-  <h3 id="job-live-heading">Now working</h3>
-  <p class="hint" id="job-live-label">No active work.</p>
+  <h3 id="job-live-heading" data-i18n="job.live.title">Now working</h3>
+  <p class="hint" id="job-live-label" data-i18n="job.live.none">No active work.</p>
   <ul id="job-live-list" class="job-live-list" aria-live="polite"></ul>
-  <h3 id="job-fail-heading">Recent failures</h3>
+  <h3 id="job-fail-heading" data-i18n="job.fail.title">Recent failures</h3>
   <ul id="job-fail-list" class="job-fail-list" aria-live="polite"></ul>
 </section>
 <ul id="job-track-list" class="job-track-list" aria-live="polite"></ul>

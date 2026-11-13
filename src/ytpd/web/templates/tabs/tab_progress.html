@@ -1,20 +1,20 @@
-<h2>Progression</h2>
-<p>Suivi live par étape. Download = flux <strong>audio</strong> (bestaudio, souvent quelques Mo — rapide). Transcode MP3 = <strong>CPU</strong> (libmp3lame ; pas de GPU NVENC pour le MP3).</p>
+<h2 data-i18n="progress.title">Progress</h2>
+<p data-i18n="progress.intro">Live stage tracking. Download = media fetch via yt-dlp. Audio mode then encodes MP3 on CPU (libmp3lame).</p>
 <label class="field">
-  <span>Active job</span>
+  <span data-i18n="progress.active.job">Active job</span>
   <select id="progress-job-select">
-    <option value="">— select a saved job —</option>
+    <option value="" data-i18n="progress.select.placeholder">— select a saved job —</option>
   </select>
 </label>
-<button type="button" id="progress-watch">Watch</button>
-<p class="hint" id="progress-stage-line">No active stage.</p>
+<button type="button" id="progress-watch" data-i18n="progress.watch">Watch</button>
+<p class="hint" id="progress-stage-line" data-i18n="progress.stage.none">No active stage.</p>
 <div class="progress-global">
-  <div class="progress-label" id="progress-global-label">No active job.</div>
+  <div class="progress-label" id="progress-global-label" data-i18n="progress.global.none">No active job.</div>
   <div class="progress-track" aria-hidden="true">
     <div class="progress-fill" id="progress-global-fill" style="width: 0%"></div>
   </div>
 </div>
-<h3 class="progress-section-title">Active</h3>
+<h3 class="progress-section-title" data-i18n="progress.section.active">Active</h3>
 <div id="progress-media-list" class="progress-media-list" aria-live="polite"></div>
-<h3 class="progress-section-title">Failures</h3>
+<h3 class="progress-section-title" data-i18n="progress.section.failures">Failures</h3>
 <div id="progress-fail-list" class="progress-media-list progress-fail-list" aria-live="polite"></div>

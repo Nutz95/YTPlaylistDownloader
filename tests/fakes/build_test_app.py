@@ -15,6 +15,7 @@ from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_store import AppConfigStore
 from ytpd.config.path_validator import PathValidator
 from ytpd.domain.transcode_backend_kind import TranscodeBackendKind
+from ytpd.domain.ui_locale import UiLocale
 from ytpd.jobs.job_cancel_flag import JobCancelFlag
 from ytpd.jobs.job_delete_service import JobDeleteService
 from ytpd.jobs.job_download_stack import JobDownloadStack
@@ -74,6 +75,7 @@ class BuildTestApp:
                 youtube_cookies_from_browser="",
                 youtube_cookies_file="",
                 ffmpeg_path="",
+                ui_locale=UiLocale.EN,
             )
         )
         resume_stack = JobResumeStack(

@@ -75,7 +75,9 @@
     const apply = document.createElement("button");
     apply.type = "button";
     apply.className = "failure-override-apply";
-    apply.textContent = "Appliquer";
+    apply.textContent = window.YtpdI18n
+      ? window.YtpdI18n.t("fail.apply")
+      : "Apply";
     const submit = () => {
       const youtubeUrl = input.value.trim();
       if (!youtubeUrl || !trackId || !onYoutubeOverride) {
@@ -104,8 +106,15 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = "failure-override-btn";
-    button.title = "Coller une URL YouTube";
-    button.setAttribute("aria-label", "Ouvrir le champ URL YouTube");
+    button.title = window.YtpdI18n
+      ? window.YtpdI18n.t("fail.override.title")
+      : "Paste a YouTube URL";
+    button.setAttribute(
+      "aria-label",
+      window.YtpdI18n
+        ? window.YtpdI18n.t("fail.override.aria")
+        : "Open YouTube URL field"
+    );
     button.innerHTML = LINK_ICON;
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -153,7 +162,9 @@
       const useButton = document.createElement("button");
       useButton.type = "button";
       useButton.className = "failure-candidate-use";
-      useButton.textContent = "Utiliser";
+      useButton.textContent = window.YtpdI18n
+        ? window.YtpdI18n.t("fail.use")
+        : "Use";
       useButton.title = candidate.youtube_url || "";
       useButton.addEventListener("click", (event) => {
         event.preventDefault();

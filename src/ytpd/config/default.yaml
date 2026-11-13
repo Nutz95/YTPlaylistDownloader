@@ -8,3 +8,4 @@ lm_timeout_sec: 60.0
 youtube_cookies_from_browser: "brave"
 youtube_cookies_file: ""
 ffmpeg_path: ""
+ui_locale: "en"

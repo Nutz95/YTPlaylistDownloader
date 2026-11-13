@@ -14,3 +14,4 @@ class AppConfigDocument(TypedDict):
     youtube_cookies_from_browser: str
     youtube_cookies_file: str
     ffmpeg_path: str
+    ui_locale: str

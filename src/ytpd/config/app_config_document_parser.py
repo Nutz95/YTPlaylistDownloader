@@ -3,6 +3,7 @@ from pathlib import Path
 from ytpd.config.app_config import AppConfig
 from ytpd.config.app_config_document import AppConfigDocument
 from ytpd.config.invalid_app_config_error import InvalidAppConfigError
+from ytpd.domain.ui_locale import UiLocale
 
 
 class AppConfigDocumentParser:
@@ -42,6 +43,13 @@ class AppConfigDocumentParser:
         ffmpeg_path = document.get("ffmpeg_path", "")
         if not isinstance(ffmpeg_path, str):
             raise InvalidAppConfigError("ffmpeg_path must be a string")
+        ui_locale_raw = document.get("ui_locale", UiLocale.EN.value)
+        if not isinstance(ui_locale_raw, str):
+            raise InvalidAppConfigError("ui_locale must be a string")
+        try:
+            ui_locale = UiLocale.parse(ui_locale_raw)
+        except ValueError as error:
+            raise InvalidAppConfigError(str(error)) from error
         return AppConfig(
             host=host,
             port=port,
@@ -53,4 +61,5 @@ class AppConfigDocumentParser:
             youtube_cookies_from_browser=cookies_browser.strip(),
             youtube_cookies_file=cookies_file.strip(),
             ffmpeg_path=ffmpeg_path.strip(),
+            ui_locale=ui_locale,
         )
