@@ -2,18 +2,20 @@
   color-scheme: dark;
   accent-color: var(--accent);
 
-  --bg: #0d1117;
-  --bg-elevated: #161b22;
-  --bg-input: #0b0f14;
-  --ink: #e6edf3;
-  --muted: #9da7b3;
-  --line: #30363d;
-  --accent: #3fb950;
-  --accent-strong: #56d364;
-  --danger: #f85149;
-  --radius: 12px;
-  --shadow: 0 18px 40px rgb(0 0 0 / 35%);
-  --font: "Segoe UI", system-ui, sans-serif;
+  --bg: #12131a;
+  --bg-elevated: #1a1b24;
+  --bg-input: #0e0f14;
+  --ink: #ebe6dc;
+  --muted: #9b968c;
+  --line: #2c2e3a;
+  --accent: #c4a574;
+  --accent-strong: #d8bc8e;
+  --accent-ink: #1a140c;
+  --danger: #e07070;
+  --radius: 8px;
+  --shadow: 0 1px 0 rgb(255 255 255 / 4%), 0 12px 28px rgb(0 0 0 / 45%);
+  --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  scrollbar-color: #484f58 transparent;
+  scrollbar-color: #3a3c48 transparent;
 }
