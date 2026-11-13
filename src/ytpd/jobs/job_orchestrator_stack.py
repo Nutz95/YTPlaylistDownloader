@@ -8,6 +8,7 @@ from ytpd.jobs.job_download_transcode_coordinator import (
 )
 from ytpd.jobs.job_match_stack import JobMatchStack
 from ytpd.jobs.job_force_reprocess_cleaner import JobForceReprocessCleaner
+from ytpd.jobs.os_path_unlinker import OsPathUnlinker
 from ytpd.jobs.job_orchestrator import JobOrchestrator
 from ytpd.jobs.job_pipeline_runner import JobPipelineRunner
 from ytpd.jobs.job_queue_next_picker import JobQueueNextPicker
@@ -57,7 +58,7 @@ class JobOrchestratorStack:
             PathTrackArtifactProbe(paths),
             cancel_flag,
             match_stack.model_runtime,
-            JobForceReprocessCleaner(paths, catalog),
+            JobForceReprocessCleaner(paths, catalog, OsPathUnlinker()),
         )
         self.pipeline_runner = JobPipelineRunner(
             job_store,

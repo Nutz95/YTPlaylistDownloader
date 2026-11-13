@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.fakes.fake_path_unlinker import FakePathUnlinker
+from tests.fakes.force_reprocess_job_parts import ForceReprocessJobParts
 from ytpd.catalog.memory_output_catalog import MemoryOutputCatalog
 from ytpd.domain.catalog_entry import CatalogEntry
 from ytpd.domain.job_media_mode import JobMediaMode
@@ -12,10 +14,11 @@ from ytpd.domain.track_phase import TrackPhase
 from ytpd.domain.track_ref import TrackRef
 from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.jobs.job_force_reprocess_cleaner import JobForceReprocessCleaner
+from ytpd.jobs.os_path_unlinker import OsPathUnlinker
 from ytpd.jobs.track_artifact_paths import TrackArtifactPaths
 
 
-def _job(paths: TrackArtifactPaths) -> tuple[JobSnapshot, TrackRef]:
+def _job_parts() -> ForceReprocessJobParts:
     track = TrackRef(
         track_id="vid",
         title="Clip",
@@ -37,16 +40,16 @@ def _job(paths: TrackArtifactPaths) -> tuple[JobSnapshot, TrackRef]:
         media_mode=JobMediaMode.VIDEO,
         force_reprocess=True,
     )
-    return job, track
+    return ForceReprocessJobParts(job=job, track=track)
 
 
 def test_cleaner_removes_work_destination_and_catalog(tmp_path: Path) -> None:
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
     catalog = MemoryOutputCatalog()
-    job, track = _job(paths)
-    media = paths.download_media_file(job, track)
-    marker = paths.download_complete_marker(job, track)
-    dest = paths.destination_file(job, track)
+    parts = _job_parts()
+    media = paths.download_media_file(parts.job, parts.track)
+    marker = paths.download_complete_marker(parts.job, parts.track)
+    dest = paths.destination_file(parts.job, parts.track)
     media.parent.mkdir(parents=True)
     dest.parent.mkdir(parents=True)
     media.write_bytes(b"media")
@@ -54,16 +57,16 @@ def test_cleaner_removes_work_destination_and_catalog(tmp_path: Path) -> None:
     dest.write_bytes(b"out")
     catalog.upsert(
         CatalogEntry(
-            track_id=track.track_id,
-            title=track.title,
-            artist=track.artist,
+            track_id=parts.track.track_id,
+            title=parts.track.title,
+            artist=parts.track.artist,
             output_path=str(dest),
-            youtube_url=track.youtube_url,
+            youtube_url=parts.track.youtube_url,
             deezer_id=None,
         )
     )
 
-    JobForceReprocessCleaner(paths, catalog).clear(job)
+    JobForceReprocessCleaner(paths, catalog, OsPathUnlinker()).clear(parts.job)
 
     assert not media.exists()
     assert not marker.exists()
@@ -71,17 +74,13 @@ def test_cleaner_removes_work_destination_and_catalog(tmp_path: Path) -> None:
     assert catalog.list_entries() == []
 
 
-def test_cleaner_raises_when_destination_remains(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cleaner_raises_when_destination_remains(tmp_path: Path) -> None:
     paths = TrackArtifactPaths(tmp_path / "work", tmp_path / "out")
     catalog = MemoryOutputCatalog()
-    job, track = _job(paths)
-    dest = paths.destination_file(job, track)
+    parts = _job_parts()
+    dest = paths.destination_file(parts.job, parts.track)
     dest.parent.mkdir(parents=True)
     dest.write_bytes(b"locked")
-
-    def _fail_unlink(self: Path) -> None:
-        raise OSError("locked")
-
-    monkeypatch.setattr(Path, "unlink", _fail_unlink)
+    unlinker = FakePathUnlinker(refuse=[dest])
     with pytest.raises(InvalidJobError, match="could not delete"):
-        JobForceReprocessCleaner(paths, catalog).clear(job)
+        JobForceReprocessCleaner(paths, catalog, unlinker).clear(parts.job)
