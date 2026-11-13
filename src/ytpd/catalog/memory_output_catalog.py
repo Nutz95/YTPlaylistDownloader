@@ -11,6 +11,10 @@ class MemoryOutputCatalog:
         """Insert or replace one entry by track id."""
         self._entries[entry.track_id] = entry
 
+    def delete(self, track_id: str) -> None:
+        """Remove one entry by track id when present."""
+        self._entries.pop(track_id, None)
+
     def list_entries(self) -> list[CatalogEntry]:
         """Return catalogue entries sorted by track id."""
         return [self._entries[key] for key in sorted(self._entries)]

@@ -11,7 +11,7 @@ class CatalogEntryCodec:
             "track_id": entry.track_id,
             "title": entry.title,
             "artist": entry.artist,
-            "mp3_path": entry.mp3_path,
+            "output_path": entry.output_path,
             "youtube_url": entry.youtube_url,
             "deezer_id": entry.deezer_id,
         }

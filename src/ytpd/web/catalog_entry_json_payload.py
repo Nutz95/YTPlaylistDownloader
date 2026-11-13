@@ -7,6 +7,6 @@ class CatalogEntryJsonPayload(TypedDict):
     track_id: str
     title: str
     artist: str
-    mp3_path: str
+    output_path: str
     youtube_url: str | None
     deezer_id: str | None

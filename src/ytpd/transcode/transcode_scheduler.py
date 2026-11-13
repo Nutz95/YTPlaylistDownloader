@@ -66,7 +66,7 @@ class TranscodeScheduler:
                     track_id=track.track_id,
                     title=track.title,
                     artist=track.artist,
-                    mp3_path=result.output_path,
+                    output_path=result.output_path,
                     youtube_url=track.youtube_url,
                     deezer_id=track.deezer_id,
                 )

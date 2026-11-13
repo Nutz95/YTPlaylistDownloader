@@ -26,7 +26,7 @@
     }
     entries.forEach((entry) => {
       const item = document.createElement("li");
-      item.textContent = `${entry.artist} — ${entry.title} → ${entry.mp3_path}`;
+      item.textContent = `${entry.artist} — ${entry.title} → ${entry.output_path}`;
       list.appendChild(item);
     });
     status.textContent = `${entries.length} catalogue entries.`;
