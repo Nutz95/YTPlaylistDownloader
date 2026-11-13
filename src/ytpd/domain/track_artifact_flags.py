@@ -6,4 +6,4 @@ class TrackArtifactFlags:
     """Filesystem presence flags used by the resume decision table."""
 
     download_complete: bool
-    mp3_present: bool
+    output_present: bool

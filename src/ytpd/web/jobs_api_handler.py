@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import cast
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -21,6 +22,7 @@ from ytpd.jobs.job_track_youtube_override_service import (
 )
 from ytpd.jobs.job_transcode_service import JobTranscodeService
 from ytpd.jobs.pipeline_busy_error import PipelineBusyError
+from ytpd.web.job_create_request_parser import JobCreateRequestParser
 from ytpd.web.job_list_item_codec import JobListItemCodec
 
 
@@ -53,6 +55,7 @@ class JobsApiHandler:
         self._codec = JobSnapshotCodec()
         self._list_codec = JobListItemCodec()
         self._resume_codec = JobResumePlanCodec()
+        self._create_parser = JobCreateRequestParser()
 
     async def create_job(self, request: Request) -> JSONResponse:
         """Create a queued job and drain the FIFO so it starts when the runner is free."""
@@ -62,14 +65,15 @@ class JobsApiHandler:
                 status_code=400,
                 content={"error": "JSON body must be an object"},
             )
-        raw_url = body.get("url")
-        if not isinstance(raw_url, str):
-            return JSONResponse(
-                status_code=400,
-                content={"error": "url must be a non-empty string"},
-            )
         try:
-            snapshot = self._job_store.create(raw_url)
+            create_request = self._create_parser.parse(
+                cast(Mapping[str, str | bool | None], body)
+            )
+            snapshot = self._job_store.create(
+                create_request.source_url,
+                create_request.media_mode,
+                create_request.force_reprocess,
+            )
         except DuplicateSourceUrlError as error:
             return JSONResponse(status_code=409, content={"error": str(error)})
         except InvalidJobError as error:

@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from ytpd.domain.job_media_mode import JobMediaMode
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.job_status import JobStatus
 from ytpd.domain.source_kind import SourceKind
@@ -14,12 +15,17 @@ class JobStore:
     def __init__(self, checkpoint_store: JobCheckpointStore) -> None:
         self._checkpoint_store = checkpoint_store
 
-    def create(self, source_url: str) -> JobSnapshot:
+    def create(
+        self,
+        source_url: str,
+        media_mode: JobMediaMode = JobMediaMode.AUDIO,
+        force_reprocess: bool = False,
+    ) -> JobSnapshot:
         """Create a queued job for ``source_url`` and persist it."""
         cleaned = source_url.strip()
         if cleaned == "":
             raise InvalidJobError("source_url must be a non-empty string")
-        self._ensure_unique_source_url(cleaned)
+        self._ensure_unique_source(cleaned, media_mode)
         snapshot = JobSnapshot(
             job_id=str(uuid4()),
             source_url=cleaned,
@@ -27,6 +33,8 @@ class JobStore:
             status=JobStatus.QUEUED,
             tracks=[],
             error_message=None,
+            media_mode=media_mode,
+            force_reprocess=force_reprocess,
         )
         self._checkpoint_store.save(snapshot)
         return snapshot
@@ -48,9 +56,12 @@ class JobStore:
         """Remove one job by id. Return True when a job was deleted."""
         return self._checkpoint_store.delete(job_id)
 
-    def _ensure_unique_source_url(self, cleaned: str) -> None:
+    def _ensure_unique_source(self, cleaned: str, media_mode: JobMediaMode) -> None:
         for existing in self._checkpoint_store.list_jobs():
-            if existing.source_url.strip() == cleaned:
+            if (
+                existing.source_url.strip() == cleaned
+                and existing.media_mode is media_mode
+            ):
                 raise DuplicateSourceUrlError(
-                    "a job with this source URL already exists"
+                    "a job with this source URL and media mode already exists"
                 )

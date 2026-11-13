@@ -11,6 +11,7 @@ from ytpd.jobs.job_match_stack import JobMatchStack
 from ytpd.jobs.job_download_transcode_coordinator import (
     JobDownloadTranscodeCoordinator,
 )
+from ytpd.jobs.job_force_reprocess_cleaner import JobForceReprocessCleaner
 from ytpd.jobs.job_orchestrator import JobOrchestrator
 from ytpd.jobs.job_resolve_stack import JobResolveStack
 from ytpd.jobs.job_store import JobStore
@@ -137,9 +138,9 @@ def test_orchestrator_runs_three_track_pipeline_offline(tmp_path: Path) -> None:
         match_stack.match_service,
         coordinator,
         PathTrackArtifactProbe(paths),
-        catalog,
         cancel_flag,
         lm_runtime,
+        JobForceReprocessCleaner(paths, catalog),
     )
     job = store.create("https://www.youtube.com/playlist?list=demo")
     result = orchestrator.run_job(job.job_id)
@@ -207,9 +208,9 @@ def test_orchestrator_releases_lm_before_media_pipeline(tmp_path: Path) -> None:
         match_stack.match_service,
         RecordingDownloadTranscodeCoordinator(store, events),
         PathTrackArtifactProbe(paths),
-        MemoryOutputCatalog(),
         cancel_flag,
         lm_runtime,
+        JobForceReprocessCleaner(paths, MemoryOutputCatalog()),
     )
     job = store.create("https://www.youtube.com/playlist?list=demo")
     orchestrator.run_job(job.job_id)

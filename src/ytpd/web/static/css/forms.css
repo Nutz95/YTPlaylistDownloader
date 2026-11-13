@@ -49,3 +49,51 @@ button:disabled {
 .config-form button[type="submit"] {
   margin-top: 0.35rem;
 }
+
+.media-mode-field {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem 0.75rem;
+  background: color-mix(in srgb, var(--bg-input) 88%, transparent);
+}
+
+.media-mode-field legend {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 0 0.25rem;
+}
+
+.media-mode-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.media-mode-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-input);
+  cursor: pointer;
+}
+
+.media-mode-option:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.media-mode-option input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.media-mode-field .hint {
+  margin: 0.55rem 0 0;
+}
+
+.force-reprocess-option {
+  margin-top: 0.65rem;
+}

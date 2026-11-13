@@ -12,7 +12,7 @@ class TrackStateMachine:
         phase = track.phase
         if phase is TrackPhase.SKIPPED or phase is TrackPhase.DONE:
             return ResumeAction.NONE
-        if artifacts.mp3_present:
+        if artifacts.output_present:
             return ResumeAction.NONE
         if track.needs_youtube_match():
             return ResumeAction.MATCH

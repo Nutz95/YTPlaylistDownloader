@@ -29,15 +29,54 @@ def test_create_and_get_job(
     assert body["started"] is True
     assert body["status"] == "running"
     assert body["tracks"] == []
+    assert body["media_mode"] == "audio"
     fetched = client.get(f"/api/jobs/{body['job_id']}")
     assert fetched.status_code == 200
     assert fetched.json()["source_url"] == "https://youtu.be/abc"
+    assert fetched.json()["media_mode"] == "audio"
     listed = client.get("/api/jobs")
     assert listed.status_code == 200
     jobs = listed.json()["jobs"]
     assert len(jobs) == 1
     assert jobs[0]["track_count"] == 0
+    assert jobs[0]["media_mode"] == "audio"
     assert "tracks" not in jobs[0]
+
+
+def test_create_job_with_video_media_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(BuildTestApp().build(tmp_path))
+    created = client.post(
+        "/api/jobs",
+        json={
+            "url": "https://youtu.be/vid",
+            "media_mode": "video",
+            "force_reprocess": True,
+        },
+    )
+    assert created.status_code == 201
+    assert created.json()["media_mode"] == "video"
+    assert created.json()["force_reprocess"] is True
+    fetched = client.get(f"/api/jobs/{created.json()['job_id']}")
+    assert fetched.json()["media_mode"] == "video"
+    assert fetched.json()["force_reprocess"] is True
+
+
+def test_create_job_rejects_invalid_media_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(BuildTestApp().build(tmp_path))
+    response = client.post(
+        "/api/jobs",
+        json={"url": "https://youtu.be/vid", "media_mode": "flac"},
+    )
+    assert response.status_code == 400
+    assert "media_mode" in response.json()["error"]
 
 
 def test_progress_endpoint_for_empty_job(
@@ -241,6 +280,25 @@ def test_create_duplicate_source_url_returns_409(
     assert "already exists" in second.json()["error"]
     listed = client.get("/api/jobs")
     assert len(listed.json()["jobs"]) == 1
+
+
+def test_create_allows_same_url_audio_and_video(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(BuildTestApp().build(tmp_path))
+    audio = client.post(
+        "/api/jobs",
+        json={"url": "https://youtu.be/both", "media_mode": "audio"},
+    )
+    video = client.post(
+        "/api/jobs",
+        json={"url": "https://youtu.be/both", "media_mode": "video"},
+    )
+    assert audio.status_code == 201
+    assert video.status_code == 201
+    assert audio.json()["job_id"] != video.json()["job_id"]
 
 
 def test_delete_completed_jobs_endpoint(

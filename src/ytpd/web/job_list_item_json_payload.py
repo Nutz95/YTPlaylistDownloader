@@ -1,5 +1,6 @@
 from typing import NotRequired, TypedDict
 
+from ytpd.web.job_media_mode_name import JobMediaModeName
 from ytpd.web.job_status_name import JobStatusName
 from ytpd.web.pipeline_stage_name import PipelineStageName
 from ytpd.web.source_kind_name import SourceKindName
@@ -16,3 +17,5 @@ class JobListItemJsonPayload(TypedDict):
     error_message: str | None
     pipeline_stage: NotRequired[PipelineStageName | None]
     source_title: NotRequired[str | None]
+    media_mode: NotRequired[JobMediaModeName]
+    force_reprocess: NotRequired[bool]

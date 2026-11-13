@@ -3,6 +3,7 @@ from typing import cast
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.web.job_display_title import JobDisplayTitle
 from ytpd.web.job_list_item_json_payload import JobListItemJsonPayload
+from ytpd.web.job_media_mode_name import JobMediaModeName
 from ytpd.web.job_status_name import JobStatusName
 from ytpd.web.pipeline_stage_name import PipelineStageName
 from ytpd.web.source_kind_name import SourceKindName
@@ -30,4 +31,6 @@ class JobListItemCodec:
             "error_message": snapshot.error_message,
             "pipeline_stage": stage,
             "source_title": self._display_title.for_snapshot(snapshot),
+            "media_mode": cast(JobMediaModeName, snapshot.media_mode.value),
+            "force_reprocess": snapshot.force_reprocess,
         }

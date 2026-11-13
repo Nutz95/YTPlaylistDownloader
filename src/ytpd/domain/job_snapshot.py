@@ -1,5 +1,6 @@
 from dataclasses import dataclass, replace
 
+from ytpd.domain.job_media_mode import JobMediaMode
 from ytpd.domain.job_status import JobStatus
 from ytpd.domain.pipeline_stage import PipelineStage
 from ytpd.domain.source_kind import SourceKind
@@ -18,6 +19,8 @@ class JobSnapshot:
     error_message: str | None
     pipeline_stage: PipelineStage | None = None
     source_title: str | None = None
+    media_mode: JobMediaMode = JobMediaMode.AUDIO
+    force_reprocess: bool = False
 
     def with_status(self, status: JobStatus) -> "JobSnapshot":
         """Return a copy of this snapshot with a different lifecycle status."""

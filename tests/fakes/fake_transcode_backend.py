@@ -37,7 +37,7 @@ class FakeTranscodeBackend:
             threading.Event().wait(self._delay_sec)
         with self._lock:
             self.calls.append(track.track_id)
-        destination = self._paths.destination_mp3(track)
+        destination = self._paths.destination_file(job, track)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(b"id3")
         return TranscodeResult(

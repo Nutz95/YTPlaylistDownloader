@@ -29,7 +29,7 @@ def test_resume_decision_table() -> None:
         (
             TrackPhase.DONE,
             "https://youtu.be/a",
-            TrackArtifactFlags(True, True),
+            TrackArtifactFlags(True, True),  # download_complete, output_present
             ResumeAction.NONE,
         ),
         (
@@ -59,7 +59,7 @@ def test_resume_decision_table() -> None:
         (
             TrackPhase.TRANSCODING,
             "https://youtu.be/a",
-            TrackArtifactFlags(True, True),
+            TrackArtifactFlags(True, True),  # download_complete, output_present
             ResumeAction.NONE,
         ),
         (

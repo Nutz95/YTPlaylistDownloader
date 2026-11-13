@@ -4,6 +4,24 @@
   <span>URL</span>
   <textarea id="job-url" rows="3" placeholder="https://..."></textarea>
 </label>
+<fieldset class="field media-mode-field">
+  <legend>Sortie</legend>
+  <div class="media-mode-toggle" role="radiogroup" aria-label="Mode de sortie">
+    <label class="media-mode-option">
+      <input type="radio" name="job-media-mode" value="audio" checked>
+      <span>Audio (MP3)</span>
+    </label>
+    <label class="media-mode-option">
+      <input type="radio" name="job-media-mode" value="video">
+      <span>Vidéo (meilleure qualité)</span>
+    </label>
+  </div>
+  <p class="hint">Audio : extrait la piste sonore et encode en MP3. Vidéo : télécharge le fichier vidéo complet en meilleure qualité et le copie tel quel (MP4) dans le dossier de sortie — pas d’extraction audio, pas de découpe chapitres.</p>
+  <label class="media-mode-option force-reprocess-option">
+    <input type="checkbox" id="job-force-reprocess">
+    <span>Forcer le retraitement (ignorer catalogue / fichier déjà présent)</span>
+  </label>
+</fieldset>
 <div class="job-actions-groups">
   <section class="job-action-group" aria-labelledby="job-group-create">
     <h3 id="job-group-create">1 · Create</h3>

@@ -1,6 +1,7 @@
 import json
 from typing import cast
 
+from ytpd.domain.job_media_mode import JobMediaMode
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.job_status import JobStatus
 from ytpd.domain.persisted_match_candidate import PersistedMatchCandidate
@@ -12,6 +13,7 @@ from ytpd.jobs.invalid_job_error import InvalidJobError
 from ytpd.jobs.match_candidate_payload_parser import MatchCandidatePayloadParser
 from ytpd.jobs.track_chapter_payload_parser import TrackChapterPayloadParser
 from ytpd.web.job_json_payload import JobJsonPayload
+from ytpd.web.job_media_mode_name import JobMediaModeName
 from ytpd.web.job_status_name import JobStatusName
 from ytpd.web.match_candidate_json_payload import MatchCandidateJsonPayload
 from ytpd.web.pipeline_stage_name import PipelineStageName
@@ -43,6 +45,8 @@ class JobSnapshotCodec:
             "tracks": [self._track_to_payload(track) for track in snapshot.tracks],
             "pipeline_stage": stage,
             "source_title": snapshot.source_title,
+            "media_mode": cast(JobMediaModeName, snapshot.media_mode.value),
+            "force_reprocess": snapshot.force_reprocess,
         }
 
     def from_json_text(self, text: str) -> JobSnapshot:
@@ -58,6 +62,8 @@ class JobSnapshotCodec:
         tracks_raw = loaded.get("tracks")
         pipeline_stage = loaded.get("pipeline_stage")
         source_title = loaded.get("source_title")
+        media_mode = loaded.get("media_mode", JobMediaMode.AUDIO.value)
+        force_reprocess = loaded.get("force_reprocess", False)
         if not isinstance(job_id, str) or not isinstance(source_url, str):
             raise InvalidJobError("job_id/source_url must be strings")
         if not isinstance(source_kind, str) or not isinstance(status, str):
@@ -70,9 +76,14 @@ class JobSnapshotCodec:
             raise InvalidJobError("pipeline_stage must be a string or null")
         if source_title is not None and not isinstance(source_title, str):
             raise InvalidJobError("source_title must be a string or null")
+        if not isinstance(media_mode, str):
+            raise InvalidJobError("media_mode must be a string")
+        if not isinstance(force_reprocess, bool):
+            raise InvalidJobError("force_reprocess must be a boolean")
         try:
             SourceKind(source_kind)
             JobStatus(status)
+            JobMediaMode(media_mode)
             if pipeline_stage is not None:
                 PipelineStage(pipeline_stage)
         except ValueError as error:
@@ -91,6 +102,8 @@ class JobSnapshotCodec:
                 else None
             ),
             "source_title": source_title,
+            "media_mode": cast(JobMediaModeName, media_mode),
+            "force_reprocess": force_reprocess,
         }
         return self.from_payload(payload)
 
@@ -99,6 +112,7 @@ class JobSnapshotCodec:
         tracks = [self._track_from_payload(item) for item in payload["tracks"]]
         stage_raw = payload.get("pipeline_stage")
         stage = PipelineStage(stage_raw) if stage_raw is not None else None
+        media_mode_raw = payload.get("media_mode", JobMediaMode.AUDIO.value)
         return JobSnapshot(
             job_id=payload["job_id"],
             source_url=payload["source_url"],
@@ -108,6 +122,8 @@ class JobSnapshotCodec:
             error_message=payload["error_message"],
             pipeline_stage=stage,
             source_title=payload.get("source_title"),
+            media_mode=JobMediaMode(media_mode_raw),
+            force_reprocess=payload.get("force_reprocess", False),
         )
 
     def _parse_track_mapping(self, item: TrackJsonPayload) -> TrackJsonPayload:

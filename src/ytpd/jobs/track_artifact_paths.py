@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from ytpd.domain.job_media_mode_policy import JobMediaModePolicy
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.track_ref import TrackRef
 from ytpd.jobs.mp3_filename_sanitizer import Mp3FilenameSanitizer
@@ -23,26 +24,31 @@ class TrackArtifactPaths:
 
     def download_media_file(self, job: JobSnapshot, track: TrackRef) -> Path:
         """Path of the downloaded media file for ``track`` (shared by chapters)."""
-        return self.job_work_dir(job) / f"{self._download_stem(track)}.media"
+        policy = JobMediaModePolicy.for_mode(job.media_mode)
+        stem = self._download_stem(track)
+        return self.job_work_dir(job) / f"{stem}{policy.download_suffix}"
 
     def download_partial_file(self, job: JobSnapshot, track: TrackRef) -> Path:
         """Path of the yt-dlp partial download for ``track``."""
-        return self.job_work_dir(job) / f"{self._download_stem(track)}.media.part"
+        media = self.download_media_file(job, track)
+        return media.with_name(f"{media.name}.part")
 
     def download_complete_marker(self, job: JobSnapshot, track: TrackRef) -> Path:
         """Path of the sidecar that marks a finished download for ``track``."""
         return self.job_work_dir(job) / f"{self._download_stem(track)}.download"
 
-    def destination_mp3(self, track: TrackRef) -> Path:
-        """Path of the destination MP3 for ``track`` (``Artist - Title`` naming)."""
+    def destination_file(self, job: JobSnapshot, track: TrackRef) -> Path:
+        """Path of the destination output for ``track`` (MP3 or MP4)."""
+        policy = JobMediaModePolicy.for_mode(job.media_mode)
         stem = self._filename_sanitizer.stem_for_track(
             track.artist,
             track.title,
             track.track_id,
         )
+        extension = policy.destination_extension
         if track.chapter_index is not None:
-            return self._dest_dir / f"{track.chapter_index + 1:02d} - {stem}.mp3"
-        return self._dest_dir / f"{stem}.mp3"
+            return self._dest_dir / f"{track.chapter_index + 1:02d} - {stem}.{extension}"
+        return self._dest_dir / f"{stem}.{extension}"
 
     def _download_stem(self, track: TrackRef) -> str:
         if track.parent_video_id is not None and track.parent_video_id.strip() != "":

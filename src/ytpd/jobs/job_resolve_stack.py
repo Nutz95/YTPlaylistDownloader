@@ -1,5 +1,6 @@
 from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_store import JobStore
+from ytpd.jobs.video_chapter_collapser import VideoChapterCollapser
 from ytpd.ports.deezer_api_client import DeezerApiClient
 from ytpd.ports.ytdlp_flat_playlist_client import YtdlpFlatPlaylistClient
 from ytpd.ports.ytdlp_video_metadata_client import YtdlpVideoMetadataClient
@@ -26,4 +27,5 @@ class JobResolveStack:
                 YoutubeResolver(ytdlp_client, video_client),
                 DeezerResolver(deezer_client),
             ),
+            VideoChapterCollapser(),
         )

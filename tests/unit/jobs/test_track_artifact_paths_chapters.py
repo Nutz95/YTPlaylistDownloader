@@ -1,5 +1,7 @@
+from dataclasses import replace
 from pathlib import Path
 
+from ytpd.domain.job_media_mode import JobMediaMode
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.job_status import JobStatus
 from ytpd.domain.source_kind import SourceKind
@@ -39,8 +41,13 @@ def test_chapter_tracks_share_parent_download_stem(tmp_path: Path) -> None:
     track = _chapter_track()
     assert paths.download_media_file(job, track).name == "vid.media"
     assert paths.download_complete_marker(job, track).name == "vid.download"
-    assert paths.destination_mp3(track).name == (
+    assert paths.destination_file(job, track).name == (
         "01 - KageYume - Metamorphosis umbrae.mp3"
+    )
+    video_job = replace(job, media_mode=JobMediaMode.VIDEO)
+    assert paths.download_media_file(video_job, track).name == "vid.mp4"
+    assert paths.destination_file(video_job, track).name == (
+        "01 - KageYume - Metamorphosis umbrae.mp4"
     )
 
 
@@ -66,4 +73,4 @@ def test_plain_track_uses_artist_title_mp3_name(tmp_path: Path) -> None:
         error_message=None,
     )
     assert paths.download_media_file(job, track).name == "deezer-123.media"
-    assert paths.destination_mp3(track).name == "Imagine Dragons - Radioactive.mp3"
+    assert paths.destination_file(job, track).name == "Imagine Dragons - Radioactive.mp3"

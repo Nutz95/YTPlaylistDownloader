@@ -11,11 +11,11 @@ from ytpd.jobs.job_cancel_flag import JobCancelFlag
 from ytpd.jobs.job_download_transcode_coordinator import (
     JobDownloadTranscodeCoordinator,
 )
+from ytpd.jobs.job_force_reprocess_cleaner import JobForceReprocessCleaner
 from ytpd.jobs.job_match_service import JobMatchService
 from ytpd.jobs.job_resolve_service import JobResolveService
 from ytpd.jobs.job_store import JobStore
 from ytpd.ports.lm_studio_model_runtime import LmStudioModelRuntime
-from ytpd.ports.output_catalog import OutputCatalog
 from ytpd.ports.track_artifact_probe import TrackArtifactProbe
 
 
@@ -29,18 +29,18 @@ class JobOrchestrator:
         match_service: JobMatchService,
         media_coordinator: JobDownloadTranscodeCoordinator,
         artifact_probe: TrackArtifactProbe,
-        catalog: OutputCatalog,
         cancel_flag: JobCancelFlag,
         lm_runtime: LmStudioModelRuntime,
+        force_cleaner: JobForceReprocessCleaner,
     ) -> None:
         self._job_store = job_store
         self._resolve_service = resolve_service
         self._match_service = match_service
         self._media_coordinator = media_coordinator
         self._artifact_probe = artifact_probe
-        self._catalog = catalog
         self._cancel_flag = cancel_flag
         self._lm_runtime = lm_runtime
+        self._force_cleaner = force_cleaner
 
     def run_job(self, job_id: str) -> OrchestratorResult:
         """Execute the full pipeline for ``job_id`` until done or cancelled."""
@@ -63,7 +63,11 @@ class JobOrchestrator:
             )
         if self._cancel_flag.is_cancelled():
             return self._cancelled(job)
-        job = self._skip_catalogued(job)
+        if job.force_reprocess:
+            self._force_cleaner.clear(job)
+            job = self._job_store.save(self._reset_for_force(job))
+        else:
+            job = self._skip_existing_outputs(job)
         job = self._match_service.match_job(job.job_id)
         if self._cancel_flag.is_cancelled():
             return self._cancelled(job)
@@ -86,15 +90,28 @@ class JobOrchestrator:
         """Request cooperative cancellation of the active run."""
         self._cancel_flag.cancel()
 
-    def _skip_catalogued(self, job: JobSnapshot) -> JobSnapshot:
-        known = {entry.track_id for entry in self._catalog.list_entries()}
+    def _reset_for_force(self, job: JobSnapshot) -> JobSnapshot:
+        tracks: list[TrackRef] = []
+        for track in job.tracks:
+            if track.phase in {TrackPhase.SKIPPED, TrackPhase.DONE}:
+                phase = (
+                    TrackPhase.MATCHED
+                    if track.youtube_url is not None and track.youtube_url.strip() != ""
+                    else TrackPhase.PENDING
+                )
+                tracks.append(replace(track, phase=phase, error_message=None))
+            else:
+                tracks.append(replace(track, error_message=None))
+        return replace(job, tracks=tracks, force_reprocess=False)
+
+    def _skip_existing_outputs(self, job: JobSnapshot) -> JobSnapshot:
+        """Skip tracks whose destination for this job mode already exists on disk."""
         tracks: list[TrackRef] = []
         changed = False
         for track in job.tracks:
             flags = self._artifact_probe.flags_for(job, track)
-            already = track.track_id in known or flags.mp3_present
             terminal = track.phase in {TrackPhase.SKIPPED, TrackPhase.DONE}
-            if already and not terminal:
+            if flags.output_present and not terminal:
                 tracks.append(
                     replace(track, phase=TrackPhase.SKIPPED, error_message=None)
                 )

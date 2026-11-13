@@ -29,7 +29,7 @@ class TrackPhaseHealer:
         if track.phase in {TrackPhase.SKIPPED, TrackPhase.DONE}:
             return track
         flags = self._artifact_probe.flags_for(job, track)
-        if flags.mp3_present:
+        if flags.output_present:
             return replace(track, phase=TrackPhase.DONE, error_message=None)
         if track.phase is TrackPhase.TRANSCODING and flags.download_complete:
             return replace(track, phase=TrackPhase.DOWNLOADED, error_message=None)

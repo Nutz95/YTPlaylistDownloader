@@ -37,6 +37,20 @@
     return job && job.status !== "running";
   }
 
+  function selectedMediaMode() {
+    const checked = document.querySelector('input[name="job-media-mode"]:checked');
+    return checked && checked.value === "video" ? "video" : "audio";
+  }
+
+  function mediaModeLabel(mode) {
+    return mode === "video" ? "video" : "audio";
+  }
+
+  function forceReprocessSelected() {
+    const box = document.getElementById("job-force-reprocess");
+    return !!(box && box.checked);
+  }
+
   function paintList() {
     jobList.innerHTML = "";
     if (latestJobs.length === 0) {
@@ -62,7 +76,8 @@
       const meta = document.createElement("div");
       meta.className = "meta";
       const stage = job.pipeline_stage ? ` · ${job.pipeline_stage}` : "";
-      meta.textContent = `${selection.shortId(job.job_id)} · ${job.status}${stage} · ${job.source_kind} · ${job.track_count} tracks`;
+      const mode = mediaModeLabel(job.media_mode);
+      meta.textContent = `${selection.shortId(job.job_id)} · ${job.status}${stage} · ${mode} · ${job.source_kind} · ${job.track_count} tracks`;
       if (sourceTitle) {
         const urlLine = document.createElement("div");
         urlLine.className = "meta";
@@ -271,7 +286,11 @@
     const response = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: urlInput.value }),
+      body: JSON.stringify({
+        url: urlInput.value,
+        media_mode: selectedMediaMode(),
+        force_reprocess: forceReprocessSelected(),
+      }),
     });
     const body = await response.json();
     if (!response.ok) {

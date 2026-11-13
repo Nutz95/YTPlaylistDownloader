@@ -5,10 +5,12 @@ from ytpd.ports.transcode_progress_store import TranscodeProgressStore
 from ytpd.runtime.subprocess_text_runner import SubprocessTextRunner
 from ytpd.transcode.cpu_parallelism import CpuParallelism
 from ytpd.transcode.ffmpeg_kind_worker import FfmpegKindWorker
+from ytpd.transcode.media_output_backend import MediaOutputBackend
+from ytpd.transcode.video_output_deliverer import VideoOutputDeliverer
 
 
 class BackendDetect:
-    """Build the CPU MP3 worker pool (libmp3lame; no fake GPU backends)."""
+    """Build the CPU media-output worker pool (MP3 encode or video copy)."""
 
     def __init__(
         self,
@@ -28,14 +30,18 @@ class BackendDetect:
         self._runner = runner or SubprocessTextRunner()
 
     def detect(self) -> list[TranscodeBackend]:
-        """Return one CPU worker per parallelism slot."""
+        """Return one media-output worker per parallelism slot."""
+        video_deliverer = VideoOutputDeliverer(self._paths)
         return [
-            FfmpegKindWorker(
-                self._paths,
-                TranscodeBackendKind.CPU,
-                self._runner,
-                self._ffmpeg_path,
-                self._progress_store,
+            MediaOutputBackend(
+                FfmpegKindWorker(
+                    self._paths,
+                    TranscodeBackendKind.CPU,
+                    self._runner,
+                    self._ffmpeg_path,
+                    self._progress_store,
+                ),
+                video_deliverer,
             )
             for _ in range(self._cpu_parallelism.worker_count())
         ]

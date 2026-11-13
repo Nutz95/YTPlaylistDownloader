@@ -6,11 +6,13 @@ from pathlib import Path
 from ytpd.domain.download_attempt_mode import DownloadAttemptMode
 from ytpd.domain.download_progress_snapshot import DownloadProgressSnapshot
 from ytpd.domain.download_result import DownloadResult
+from ytpd.domain.job_media_mode import JobMediaMode
 from ytpd.domain.job_snapshot import JobSnapshot
 from ytpd.domain.track_ref import TrackRef
 from ytpd.domain.ytdlp_download_attempt import YtdlpDownloadAttempt
 from ytpd.download.download_resume_policy import DownloadResumePolicy
 from ytpd.download.ytdlp_download_error_hint import YtdlpDownloadErrorHint
+from ytpd.download.ytdlp_media_format_args import YtdlpMediaFormatArgs
 from ytpd.download.ytdlp_progress_line_parser import YtdlpProgressLineParser
 from ytpd.jobs.track_artifact_paths import TrackArtifactPaths
 from ytpd.ports.download_progress_store import DownloadProgressStore
@@ -37,6 +39,7 @@ class YtdlpDownloader:
         self._max_attempts = max(1, max_attempts)
         self._argv_builder = argv_builder
         self._error_hint = YtdlpDownloadErrorHint()
+        self._format_args = YtdlpMediaFormatArgs()
         self._media_locks: dict[str, threading.Lock] = {}
         self._media_locks_guard = threading.Lock()
 
@@ -96,6 +99,7 @@ class YtdlpDownloader:
             media,
             self._paths.download_partial_file(job, track),
             media_key,
+            job.media_mode,
         )
 
     def _download_attempts(
@@ -105,6 +109,7 @@ class YtdlpDownloader:
         media: Path,
         partial: Path,
         media_key: str,
+        media_mode: JobMediaMode,
     ) -> DownloadResult:
         last_error = "download failed"
         for _ in range(self._max_attempts):
@@ -117,7 +122,7 @@ class YtdlpDownloader:
                 total_bytes=None,
                 message="starting yt-dlp",
             )
-            attempt = self._run_ytdlp(youtube_url, media, mode, media_key)
+            attempt = self._run_ytdlp(youtube_url, media, mode, media_key, media_mode)
             if attempt.success and media.is_file() and media.stat().st_size > 0:
                 return self._success_result(
                     track_id, media, media_key, "download complete"
@@ -186,13 +191,13 @@ class YtdlpDownloader:
         media_path: Path,
         mode: DownloadAttemptMode,
         media_key: str,
+        media_mode: JobMediaMode,
     ) -> YtdlpDownloadAttempt:
         argv = [
             *self._argv_builder.prefix(),
             "--no-playlist",
             "--newline",
-            "-f",
-            "bestaudio/best",
+            *self._format_args.for_mode(media_mode),
             "-o",
             str(media_path),
         ]

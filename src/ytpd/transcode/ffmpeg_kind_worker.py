@@ -45,7 +45,7 @@ class FfmpegKindWorker:
             FfmpegEncodeRequest(
                 track_id=track.track_id,
                 source=self._paths.download_media_file(job, track),
-                destination=self._paths.destination_mp3(track),
+                destination=self._paths.destination_file(job, track),
                 backend=self._kind,
                 chapter_start_sec=chapter_start,
                 chapter_duration_sec=duration
